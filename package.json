@@ -1,7 +1,7 @@
 {
   "name": "conf-inject-script",
   "version": "1.0.0",
-  "description": "Cloudflare Worker脚本，用于在QuantumultX配置文件中注入自定义内容",
+  "description": "基于Cloudflare Worker的conf配置文件注入脚本",
   "main": "src/index.js",
   "scripts": {
     "test": "node test/test.js",

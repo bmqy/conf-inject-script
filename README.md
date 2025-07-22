@@ -1,4 +1,4 @@
-# Cloudflare Worker 配置文件注入脚本
+# 配置文件注入脚本
 
 这是一个用于 QuantumultX、Loon 等工具配置文件自动注入自定义内容的 Cloudflare Worker 脚本，支持多平台、多作者、远程 Gist 注入、Token 安全校验、自动构建部署等功能。
 

@@ -331,6 +331,32 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
             result.push(title + '\n' + merged.join('\n'));
           }
         }
+      } else if (platform === 'loon' && name === 'plugin') {
+        // loon [plugin] 分区特殊处理：网址唯一，注入优先
+        const getPluginUrl = (line) => {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || trimmedLine.startsWith('#')) {
+            return null;
+          }
+          return trimmedLine.split(',')[0].trim();
+        };
+        const injectedUrlMap = {};
+        injectBody.forEach(line => {
+          const url = getPluginUrl(line);
+          if (url) {
+            injectedUrlMap[url] = true;
+          }
+        });
+        const merged = [
+          ...injectBody,
+          ...origBody.filter(line => {
+            const url = getPluginUrl(line);
+            return url ? !injectedUrlMap.hasOwnProperty(url) : true;
+          })
+        ];
+        if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
+          result.push(title + '\n' + merged.join('\n'));
+        }
       } else {
         // 其它分区：注入内容在前，原内容在后
         const merged = [

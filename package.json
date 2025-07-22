@@ -1,0 +1,29 @@
+{
+  "name": "conf-inject-script",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker脚本，用于在QuantumultX配置文件中注入自定义内容",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node test/test.js",
+    "build": "node build.js",
+    "deploy": "npm run build && npx wrangler deploy",
+    "dev": "npm run build && npx wrangler dev"
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "quantumultx",
+    "loon",
+    "conf",
+    "inject"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "toml": "^3.0.0"
+  }
+}

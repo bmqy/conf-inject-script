@@ -85,10 +85,6 @@ ACCESS_TOKEN=your_secret_token
 - Worker 会自动拉取对应平台的 Gist 内容，按分区合并注入到原始配置文件。
 - `[general]`、`[mitm]` 分区 key 唯一，注入内容优先，其它分区内容追加，所有注释、顺序、空行均保留。
 
-## 错误页面美化
-
-- 地址格式错误、未授权、平台未配置等情况，均返回带 CSS 的美观 HTML 页面，提示清晰友好。
-
 ## 构建与自动化
 
 - 运行 `node build.js` 会自动读取 `.env`，生成 wrangler.toml 并写入所有环境变量，无需手动维护 toml 文件。

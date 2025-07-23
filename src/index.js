@@ -188,22 +188,30 @@ export default {
     if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
       const tgToken = env.TELEGRAM_BOT_TOKEN;
       const tgChatId = env.TELEGRAM_CHAT_ID;
+      // MarkdownV2转义函数
+      function escapeMarkdownV2(text) {
+        return String(text).replace(/[\\_\*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
+      }
       // 查找源文件地址
       let sourceUrl = matchedConfig.url || '';
       // token遮罩
-      const maskedToken = `||${token}||`;
-      const msg = `平台: ${platform}\n源文件: ${sourceUrl}\nToken: ${maskedToken}`;
+      const maskedToken = `||${escapeMarkdownV2(token)}||`;
+      const msg = `#通知服务 #配置注入脚本\n\n有新的请求\n\n平台: ${escapeMarkdownV2(platform)}\n源文件: ${escapeMarkdownV2(sourceUrl)}\nToken: ${maskedToken}`;
       const tgApi = `https://api.telegram.org/bot${tgToken}/sendMessage`;
-      fetch(tgApi, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: tgChatId,
-          text: msg,
-          parse_mode: 'MarkdownV2',
-          disable_web_page_preview: true
-        })
-      }).catch(()=>{});
+      try {
+        await fetch(tgApi, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: tgChatId,
+            text: msg,
+            parse_mode: 'MarkdownV2',
+            disable_web_page_preview: true
+          })
+        });
+      } catch (e) {
+        // 可选：console.log('Telegram通知失败', e);
+      }
     }
 
     return new Response(modifiedConfig, {

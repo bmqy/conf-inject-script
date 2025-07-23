@@ -188,15 +188,12 @@ export default {
     if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
       const tgToken = env.TELEGRAM_BOT_TOKEN;
       const tgChatId = env.TELEGRAM_CHAT_ID;
-      // MarkdownV2转义函数
+      // MarkdownV2严格转义函数
       function escapeMarkdownV2(text) {
-        return String(text).replace(/[\\_\*\[\]()~`>#+\-=|{}.!]/g, '\\$&');
+        return String(text).replace(/([_\*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
       }
-      // 查找源文件地址
-      let sourceUrl = matchedConfig.url || '';
-      // token遮罩
-      const maskedToken = `||${escapeMarkdownV2(token)}||`;
-      const msg = `#通知服务 #配置注入脚本\n\n有新的请求\n\n平台: ${escapeMarkdownV2(platform)}\n源文件: ${escapeMarkdownV2(sourceUrl)}\nToken: ${maskedToken}`;
+      // 构造消息内容，所有内容都转义
+      const msg = `${escapeMarkdownV2('#通知服务 #配置注入脚本')}\n\n${escapeMarkdownV2('有新的请求')}\n\n平台: ${escapeMarkdownV2(platform)}\n源文件: ${escapeMarkdownV2(matchedConfig.url || '')}\nToken: ||${escapeMarkdownV2(token)}||`;
       const tgApi = `https://api.telegram.org/bot${tgToken}/sendMessage`;
       try {
         await fetch(tgApi, {

@@ -10,6 +10,7 @@
 - 访问需携带 Token，安全性高，支持 secret 环境变量
 - 错误页面美观友好，自动提示
 - 构建脚本自动生成 wrangler.toml，环境变量一键写入
+- bot通知
 
 ## 访问方式
 
@@ -44,6 +45,8 @@
 - `INJECT_SOURCE_CONFIG_LIST`：配置列表（JSON数组，详见下方示例）
 - `INJECT_PLATFORM_LIST`：各平台注入 Gist 地址（JSON对象，key为平台名，value为gist原始链接）
 - `ACCESS_TOKEN`：访问密钥，建议使用 secret 类型，所有请求都需携带
+- `TELEGRAM_BOT_TOKEN`：用于通知的 Telegram Bot Token（可选，启用通知时必填）
+- `TELEGRAM_CHAT_ID`：用于通知的 Telegram Chat ID（可选，启用通知时必填）
 
 ### INJECT_SOURCE_CONFIG_LIST 示例
 
@@ -77,13 +80,27 @@
 ACCESS_TOKEN=your_secret_token
 ```
 
-> **建议：** `ACCESS_TOKEN` 请在 Cloudflare 控制台以 secret 方式设置，避免泄露。
+### TELEGRAM_BOT_TOKEN & TELEGRAM_CHAT_ID 示例
+
+```
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+TELEGRAM_CHAT_ID=123456789
+```
+
+> **建议：** `ACCESS_TOKEN`、`TELEGRAM_BOT_TOKEN` 请在 Cloudflare 控制台以 secret 方式设置，避免泄露。
 
 ## 注入配置内容说明
 
 - 注入内容需托管在 Gist（或其它可公开访问的原始文本地址），并在 `INJECT_PLATFORM_LIST` 中配置。
 - Worker 会自动拉取对应平台的 Gist 内容，按分区合并注入到原始配置文件。
 - `[general]`、`[mitm]` 分区 key 唯一，注入内容优先，其它分区内容追加，所有注释、顺序、空行均保留。
+
+## Telegram Bot 通知功能
+
+- 每当有用户请求合并后的配置文件时，系统会自动通过 Telegram Bot 向指定 Chat 发送通知。
+- 通知内容包括：平台、源文件地址、使用的 token（以 `||token||` 方式遮罩，防止泄露）。
+- 需在 `.env` 或 Cloudflare 环境变量中设置 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`。
+- 如不设置这两个变量，则不会发送通知。
 
 ## 构建与自动化
 

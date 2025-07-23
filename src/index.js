@@ -3,7 +3,7 @@
  * 用于在QuantumultX的conf配置文件中注入自定义内容
  */
 
-import { mergeConfBySectionRegex } from '../platform-conf-parser.js';
+import { mergeConfBySectionRegex } from '../utils/platform-conf-parser.js';
 
 /**
  * 在原始配置文件中注入自定义内容
@@ -183,6 +183,29 @@ export default {
     const injectConfigText = await gistResponse.text();
     // 使用文本分区合并
     const modifiedConfig = injectConfigToOriginal(originalConfig, injectConfigText, platform);
+
+    // 新增：发送Telegram通知
+    if (env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_CHAT_ID) {
+      const tgToken = env.TELEGRAM_BOT_TOKEN;
+      const tgChatId = env.TELEGRAM_CHAT_ID;
+      // 查找源文件地址
+      let sourceUrl = matchedConfig.url || '';
+      // token遮罩
+      const maskedToken = `||${token}||`;
+      const msg = `平台: ${platform}\n源文件: ${sourceUrl}\nToken: ${maskedToken}`;
+      const tgApi = `https://api.telegram.org/bot${tgToken}/sendMessage`;
+      fetch(tgApi, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: tgChatId,
+          text: msg,
+          parse_mode: 'MarkdownV2',
+          disable_web_page_preview: true
+        })
+      }).catch(()=>{});
+    }
+
     return new Response(modifiedConfig, {
       headers: {
         "Content-Type": "text/plain;charset=utf-8",

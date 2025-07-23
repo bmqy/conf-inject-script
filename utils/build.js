@@ -213,7 +213,7 @@ function main() {
     const toml = generateToml(config);
     
     // 写入文件
-    fs.writeFileSync(path.join(__dirname, 'wrangler.toml'), toml);
+    fs.writeFileSync(path.join(__dirname, '../wrangler.toml'), toml);
     
     console.log('成功生成 wrangler.toml 文件');
     console.log(`Worker名称: ${config.name}`);

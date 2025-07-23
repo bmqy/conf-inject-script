@@ -1,16 +1,16 @@
 # 配置文件注入脚本
 
-这是一个用于 QuantumultX、Loon 等工具配置文件自动注入自定义内容的 Cloudflare Worker 脚本，支持多平台、多作者、远程 Gist 注入、Token 安全校验、自动构建部署等功能。
+这是一个用于 QuantumultX、Loon 等工具配置文件自动注入自定义内容的 Cloudflare Worker 脚本，支持多平台、多作者、远程 Gist 注入、Token 安全校验、自动构建部署、bot通知等功能。
 
 ## 功能特点
 
-- 支持 QuantumultX、Loon 等多平台配置文件注入
+- 支持 `QuantumultX`、`Loon` 等多平台配置文件注入
 - 多作者、多平台灵活管理
-- 注入内容通过 Gist 托管，支持远程动态更新
-- 访问需携带 Token，安全性高，支持 secret 环境变量
+- 注入内容通过 `Gist` 托管，支持远程动态更新
+- 访问需携带 `Token`，安全性高，支持 `secret` 环境变量
 - 错误页面美观友好，自动提示
-- 构建脚本自动生成 wrangler.toml，环境变量一键写入
-- bot通知
+- 构建脚本自动生成 `wrangler.toml`，环境变量一键写入
+- `bot`通知
 
 ## 访问方式
 

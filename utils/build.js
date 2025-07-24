@@ -8,6 +8,12 @@
  */
 
 import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// 手动实现 __dirname 替代方案
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // 定义并导出 joinPaths 函数
 export function joinPaths(...parts) {

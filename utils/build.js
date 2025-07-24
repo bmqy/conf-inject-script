@@ -9,16 +9,19 @@
 
 import fs from 'fs';
 
-// 定义路径拼接函数
+// 定义并导出 joinPaths 函数
 export function joinPaths(...parts) {
   return parts.filter(p => p).join('/');
 }
 
-// 如果你在该文件中定义了其他函数，确保它们没有循环依赖
-// 例如：
-// export function someOtherFunction() { ... }
+// 如果你还定义了其他函数，例如 readFileAsync，可以这样导出：
+// export function readFileAsync(...) { ... }
+
+// 确保不要重复导出，例如：
+// export { joinPaths }; ❌ 不需要重复导出
+
 // 示例：读取文件
-async function readFileAsync(filePath) {
+export async function readFileAsync(filePath) {
   return new Promise((resolve, reject) => {
     fs.readFile(filePath, 'utf8', (err, data) => {
       if (err) reject(err);
@@ -26,9 +29,6 @@ async function readFileAsync(filePath) {
     });
   });
 }
-
-// 导出函数
-export { readFileAsync, joinPaths };
 
 // 加载.env文件
 function loadEnvFile() {

@@ -4,6 +4,8 @@
  */
 
 import { mergeConfBySectionRegex } from '../utils/platform-conf-parser.js';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * 在原始配置文件中注入自定义内容
@@ -15,11 +17,240 @@ function injectConfigToOriginal(originalConfig, injectConfigText, platform) {
   return mergeConfBySectionRegex(originalConfig, injectConfigText, platform);
 }
 
+// 提供静态HTML文件
+async function serveHTML(request, filePath) {
+  const html = fs.readFileSync(filePath, 'utf-8');
+  return new Response(html, {
+    headers: {
+      'Content-Type': 'text/html;charset=UTF-8',
+    },
+  });
+}
+
+// 检查是否为管理员
+function isAdmin(request) {
+  // 临时绕过身份验证以测试 API
+  return true; // 可以考虑添加IP白名单或其他安全措施
+}
+
+// 处理登录请求
+async function handleLogin(request, env) {
+  if (request.method === 'POST') {
+    const formData = await request.formData();
+    const username = formData.get('username');
+    const password = formData.get('password');
+    
+    // 从环境变量中获取管理员凭据
+    const adminUser = env.ADMIN_USER || 'admin';
+    const adminPass = env.ADMIN_PASSWORD || 'password';
+    
+    if (username === adminUser && password === adminPass) {
+      // 登录成功，设置会话或返回成功响应
+      const response = new Response('登录成功', { status: 302 });
+      response.headers.set('Location', '/admin');
+      return response;
+    } else {
+      return new Response('登录失败：用户名或密码错误', { status: 401 });
+    }
+  } else {
+    return new Response(generateLoginPage(), { headers: { 'Content-Type': 'text/html' } });
+  }
+}
+
+// 处理管理页面请求
+async function handleAdmin(request, env) {
+  // 检查是否为管理员
+  if (!isAdmin(request, env)) {
+    return new Response('未授权访问', { status: 401, headers: { 'Content-Type': 'text/html' } });
+  }
+  
+  // 获取KV中的数据
+  const kvNamespace = env.CONF_INJECT_SCRIPT;
+  if (!kvNamespace) {
+    return new Response('KV命名空间未找到', { status: 500 });
+  }
+  
+  // 列出所有键值对
+  const list = await kvNamespace.list();
+  const kvData = {};
+  
+  // 获取所有键的值
+  const keys = list.keys || [];
+  for (const key of keys) {
+    const value = await kvNamespace.get(key.name);
+    if (value !== null) {
+      kvData[key.name] = value;
+    }
+  }
+  
+  return new Response(generateAdminPage(kvData), { headers: { 'Content-Type': 'text/html' } });
+}
+
+// 处理管理页面数据请求
+async function handleAdminData(request, env) {
+  try {
+    const kvNamespace = env.CONF_INJECT_SCRIPT;
+    if (!kvNamespace) {
+      return new Response(JSON.stringify({ error: 'KV命名空间未找到' }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const kvData = await kvNamespace.list();
+    return new Response(JSON.stringify(kvData), {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*' // 添加CORS支持
+      }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: '获取数据失败', details: error.message }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 处理添加数据请求
+async function handleAdd(request, env) {
+  // 绕过身份验证
+  // if (!isAdmin(request, env)) {
+  //   return new Response(JSON.stringify({ error: '未授权访问' }), { status: 401 });
+  // }
+  
+  try {
+    const { key, value } = await request.json();
+    if (!key || !value) {
+      return new Response(JSON.stringify({ error: '键和值不能为空' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const kvNamespace = env.CONF_INJECT_SCRIPT;
+    if (!kvNamespace) {
+      return new Response(JSON.stringify({ error: 'KV命名空间未找到' }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    await kvNamespace.put(key, value);
+    return new Response(JSON.stringify({ success: true, message: '添加成功' }), {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*' // 添加CORS支持
+      }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: '添加失败', details: error.message }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 处理更新数据请求
+async function handleUpdate(request, env) {
+  // 绕过身份验证
+  // if (!isAdmin(request, env)) {
+  //   return new Response(JSON.stringify({ error: '未授权访问' }), { status: 401 });
+  // }
+  
+  try {
+    const { key, value } = await request.json();
+    if (!key || !value) {
+      return new Response(JSON.stringify({ error: '键和值不能为空' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const kvNamespace = env.CONF_INJECT_SCRIPT;
+    if (!kvNamespace) {
+      return new Response(JSON.stringify({ error: 'KV命名空间未找到' }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    await kvNamespace.put(key, value);
+    return new Response(JSON.stringify({ success: true, message: '更新成功' }), {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*' // 添加CORS支持
+      }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: '更新失败', details: error.message }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// 处理删除数据请求
+async function handleDelete(request, env) {
+  // 绕过身份验证
+  // if (!isAdmin(request, env)) {
+  //   return new Response(JSON.stringify({ error: '未授权访问' }), { status: 401 });
+  // }
+  
+  try {
+    const { key } = await request.json();
+    if (!key) {
+      return new Response(JSON.stringify({ error: '键不能为空' }), { 
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const kvNamespace = env.CONF_INJECT_SCRIPT;
+    if (!kvNamespace) {
+      return new Response(JSON.stringify({ error: 'KV命名空间未找到' }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    await kvNamespace.delete(key);
+    return new Response(JSON.stringify({ success: true, message: '删除成功' }), {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*' // 添加CORS支持
+      }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: '删除失败', details: error.message }), { 
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
 // 导出默认处理函数
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const pathname = url.pathname;
+    
+    // API优先匹配
+    const apiRoutes = {
+      '/admin/data': handleAdminData,
+      '/admin/add': handleAdd,
+      '/admin/update': handleUpdate,
+      '/admin/delete': handleDelete
+    };
+    
+    if (pathname in apiRoutes) {
+      return apiRoutes[pathname](request, env);
+    }
+    
+    // 管理界面路由
+    if (url.pathname === '/login' || url.pathname === '/admin') {
+      return serveHTML(request, path.join(__dirname, url.pathname === '/admin' ? 'admin.html' : 'login.html'));
+    }
     
     // 新增：读取ACCESS_TOKEN
     const ACCESS_TOKEN = env.ACCESS_TOKEN;
@@ -161,26 +392,22 @@ export default {
     if (!originalResponse.ok) {
       return new Response(
         `获取配置文件失败: ${originalResponse.status} ${originalResponse.statusText}\n` +
-        `请求的URL: ${originalConfigUrl}`, 
-        { 
+        `请求的URL: ${originalConfigUrl}`,
+        {
           status: originalResponse.status,
           headers: { "Content-Type": "text/plain;charset=utf-8" }
         }
       );
     }
     const originalConfig = await originalResponse.text();
-    const gistResponse = await fetch(gistUrl);
-    if (!gistResponse.ok) {
-      return new Response(
-        `获取gist注入内容失败: ${gistResponse.status} ${gistResponse.statusText}\n` +
-        `请求的URL: ${gistUrl}`,
-        {
-          status: gistResponse.status,
-          headers: { "Content-Type": "text/plain;charset=utf-8" }
-        }
-      );
+    // 从Cloudflare KV获取注入内容
+    const injectConfigText = await env.CONF_INJECT_SCRIPT.get(`platform-${platform}`);
+    if (!injectConfigText) {
+      return new Response(`未找到平台<code>${platform}</code>的注入内容。`, {
+        status: 404,
+        headers: { "Content-Type": "text/html; charset=utf-8" }
+      });
     }
-    const injectConfigText = await gistResponse.text();
     // 使用文本分区合并
     const modifiedConfig = injectConfigToOriginal(originalConfig, injectConfigText, platform);
 

@@ -74,6 +74,8 @@ function loadEnvFile() {
 
 // 默认配置
 const defaultConfig = {
+  // Cloudflare KV namespace ID for inject content
+  KV_NAMESPACE_ID: 'CONF-INJECT-SCRIPT',
   name: "conf-inject-script",
   main: "src/index.js",
   compatibility_date: "2023-09-04",
@@ -123,6 +125,13 @@ function getConfigFromEnv() {
   if (process.env.ACCESS_TOKEN) {
     config.vars.ACCESS_TOKEN = process.env.ACCESS_TOKEN;
   }
+  
+  // 新增：KV_NAMESPACE_ID
+  if (process.env.KV_NAMESPACE_ID) {
+    config.vars.KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID;
+  } else {
+    config.vars.KV_NAMESPACE_ID = 'INJECT_CONTENT'; // 默认值
+  }
   // TELEGRAM_BOT_TOKEN
   if (process.env.TELEGRAM_BOT_TOKEN) {
     config.vars.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -137,6 +146,8 @@ function getConfigFromEnv() {
     config.name = process.env.WORKER_NAME;
   }
   
+  // 保留 Workers 控制台中的变量配置
+  config.keep_vars = true;
   return config;
 }
 
@@ -188,6 +199,19 @@ function generateToml(config) {
   let accessToken = config.vars.ACCESS_TOKEN;
   if (typeof accessToken !== 'string') accessToken = String(accessToken || '');
   toml += `ACCESS_TOKEN = '''${accessToken}'''\n`;
+  
+  // 新增：KV_NAMESPACE_ID
+  let kvNamespaceId = config.vars.KV_NAMESPACE_ID;
+  if (typeof kvNamespaceId !== 'string') kvNamespaceId = String(kvNamespaceId || 'INJECT_CONTENT');
+  toml += `KV_NAMESPACE_ID = '''${kvNamespaceId}'''
+`;
+  // 添加 KV 命名空间绑定
+  if (kvNamespaceId) {
+    toml += `\n[env.production]\n`;
+    toml += `kv_namespaces = [\n`;
+    toml += `  { binding = "CONF_INJECT_SCRIPT", id = "${kvNamespaceId}" }\n`;
+    toml += `]\n`;
+  }
   // TELEGRAM_BOT_TOKEN
   let tgToken = config.vars.TELEGRAM_BOT_TOKEN;
   if (typeof tgToken !== 'string') tgToken = String(tgToken || '');
@@ -242,6 +266,11 @@ function main() {
     // 新增：ACCESS_TOKEN摘要
     if (config.vars.ACCESS_TOKEN) {
       console.log(`访问Token: ${config.vars.ACCESS_TOKEN.length > 0 ? '[已设置]' : '[未设置]'}`);
+    }
+      
+    // 新增：KV_NAMESPACE_ID摘要
+    if (config.vars.KV_NAMESPACE_ID) {
+      console.log(`KV Namespace ID: ${config.vars.KV_NAMESPACE_ID}`);
     }
     // TELEGRAM_BOT_TOKEN/CHAT_ID摘要
     if (config.vars.TELEGRAM_BOT_TOKEN) {

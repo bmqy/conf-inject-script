@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理平台注入内容</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background: #007bff; color: white; }
+        textarea { width: 100%; resize: vertical; }
+        .actions { display: flex; gap: 10px; }
+        button { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; }
+        .add-section { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .add-section input { flex: 1 1 200px; padding: 8px; }
+        .add-section button { padding: 8px 16px; }
+    </style>
+</head>
+<body>
+    <h1>管理平台注入内容</h1>
+    <div class="add-section">
+        <input type="text" id="newKey" placeholder="平台名称（键）">
+        <textarea id="newValue" placeholder="注入内容（值）" rows="3"></textarea>
+        <button onclick="addValue()">添加</button>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>平台名称（键）</th>
+                <th>注入内容（值）</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="kvTableBody">
+            <!-- 数据行将通过JavaScript动态插入 -->
+        </tbody>
+    </table>
+    <script>
+        async function fetchData() {
+            const response = await fetch('/admin/data');
+            if (!response.ok) {
+                alert('获取数据失败');
+                return {};
+            }
+            return await response.json();
+        }
+
+        async function updateValue(key) {
+            const textarea = document.querySelector(`textarea[value-key="${key}"]`);
+            const value = textarea ? textarea.value : '';
+            const response = await fetch('/admin/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value })
+            });
+            const result = await response.json();
+            alert(result.message);
+            if (result.success) loadAdminPage();
+        }
+
+        async function deleteValue(key) {
+            if (!confirm('确定要删除这个条目吗？')) return;
+            const response = await fetch('/admin/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key })
+            });
+            const result = await response.json();
+            alert(result.message);
+            if (result.success) loadAdminPage();
+        }
+
+        async function addValue() {
+            const keyInput = document.getElementById('newKey');
+            const valueInput = document.getElementById('newValue');
+            const key = keyInput ? keyInput.value.trim() : '';
+            const value = valueInput ? valueInput.value.trim() : '';
+            if (!key || !value) {
+                alert('请输入键和值');
+                return;
+            }
+            const response = await fetch('/admin/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value })
+            });
+            const result = await response.json();
+            alert(result.message);
+            if (result.success) loadAdminPage();
+        }
+
+        function createTableRow(key, value) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${key}</td>
+                <td>
+                    <textarea rows="3" value-key="${key}" class="value-textarea">${value}</textarea>
+                </td>
+                <td>
+                    <button onclick="updateValue('${key}')">更新</button>
+                    <button onclick="deleteValue('${key}')">删除</button>
+                </td>
+            `;
+            return row;
+        }
+
+        async function loadAdminPage() {
+            const tableBody = document.getElementById('kvTableBody');
+            tableBody.innerHTML = '';
+            
+            const data = await fetchData();
+            Object.entries(data || {}).forEach(([key, value]) => {
+                const row = createTableRow(key, value);
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 页面加载时获取数据
+        window.addEventListener('load', loadAdminPage);
+    </script>
+</body>
+</html>

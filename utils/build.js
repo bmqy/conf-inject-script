@@ -8,11 +8,15 @@
  */
 
 const fs = require('fs');
-const path = require('path');
+
+// 手动实现路径拼接
+export function joinPaths(...parts) {
+  return parts.filter(p => p).join('/');
+}
 
 // 加载.env文件
 function loadEnvFile() {
-  const envPath = path.join(__dirname, '.env');
+  const envPath = joinPaths(__dirname, '.env');
   
   if (fs.existsSync(envPath)) {
     console.log('发现.env文件，正在加载环境变量...');
@@ -130,7 +134,7 @@ function getConfigFromEnv() {
   if (process.env.KV_NAMESPACE_ID) {
     config.vars.KV_NAMESPACE_ID = process.env.KV_NAMESPACE_ID;
   } else {
-    config.vars.KV_NAMESPACE_ID = 'INJECT_CONTENT'; // 默认值
+    config.vars.KV_NAMESPACE_ID = 'CONF-INJECT-SCRIPT'; // 默认值
   }
   // TELEGRAM_BOT_TOKEN
   if (process.env.TELEGRAM_BOT_TOKEN) {
@@ -202,7 +206,7 @@ function generateToml(config) {
   
   // 新增：KV_NAMESPACE_ID
   let kvNamespaceId = config.vars.KV_NAMESPACE_ID;
-  if (typeof kvNamespaceId !== 'string') kvNamespaceId = String(kvNamespaceId || 'INJECT_CONTENT');
+  if (typeof kvNamespaceId !== 'string') kvNamespaceId = String(kvNamespaceId || 'CONF-INJECT-SCRIPT');
   toml += `KV_NAMESPACE_ID = '''${kvNamespaceId}'''
 `;
   // 添加 KV 命名空间绑定
@@ -237,7 +241,7 @@ function main() {
     const toml = generateToml(config);
     
     // 写入文件
-    fs.writeFileSync(path.join(__dirname, '../wrangler.toml'), toml);
+    fs.writeFileSync(joinPaths(__dirname, '../wrangler.toml'), toml);
     
     console.log('成功生成 wrangler.toml 文件');
     console.log(`Worker名称: ${config.name}`);

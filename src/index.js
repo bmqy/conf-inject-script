@@ -5,7 +5,9 @@
 
 import { mergeConfBySectionRegex } from '../utils/platform-conf-parser.js';
 import fs from 'fs';
-import path from 'path';
+
+// 如果需要使用路径拼接，使用 utils/build.js 中定义的 joinPaths 函数
+import { joinPaths } from '../utils/build.js';
 
 /**
  * 在原始配置文件中注入自定义内容
@@ -249,7 +251,7 @@ export default {
     
     // 管理界面路由
     if (url.pathname === '/login' || url.pathname === '/admin') {
-      return serveHTML(request, path.join(__dirname, url.pathname === '/admin' ? 'admin.html' : 'login.html'));
+      return serveHTML(request, joinPaths(__dirname, url.pathname === '/admin' ? 'admin.html' : 'login.html'));
     }
     
     // 新增：读取ACCESS_TOKEN

@@ -23,11 +23,6 @@ async function readFileAsync(filePath) {
 // 导出函数
 export { readFileAsync, joinPaths };
 
-// 手动实现路径拼接
-export function joinPaths(...parts) {
-  return parts.filter(p => p).join('/');
-}
-
 // 加载.env文件
 function loadEnvFile() {
   const envPath = joinPaths(__dirname, '.env');

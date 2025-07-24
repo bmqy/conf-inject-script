@@ -8,8 +8,15 @@
  */
 
 import fs from 'fs';
-import { joinPaths } from './build.js'; // 假设 joinPaths 已定义
 
+// 定义路径拼接函数
+export function joinPaths(...parts) {
+  return parts.filter(p => p).join('/');
+}
+
+// 如果你在该文件中定义了其他函数，确保它们没有循环依赖
+// 例如：
+// export function someOtherFunction() { ... }
 // 示例：读取文件
 async function readFileAsync(filePath) {
   return new Promise((resolve, reject) => {

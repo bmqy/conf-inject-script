@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "wrangler dev src/worker.js",
-    "build": "vite build",
+    "build": "node scripts/build && vite build",
     "preview": "vite preview",
     "deploy": "wrangler deploy"
   },

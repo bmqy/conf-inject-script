@@ -1,9 +1,0 @@
-name = "conf-inject-script"
-main = "src/worker.js"
-compatibility_date = "2023-09-04"
-
-keep_vars = true
-
-[[kv_namespaces]]
-binding = "CONF-INJECT-SCRIPT"
-id = "id"

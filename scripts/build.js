@@ -82,9 +82,7 @@ const defaultConfig = {
     not_found_handling : "single-page-application",
     directory: "./dist"
   },
-  kv_namespaces: [
-    { binding: "CONF-INJECT-SCRIPT", id: "kv_id" }
-  ],
+  kv_namespaces: [],
   triggers: {
     crons: []
   }
@@ -93,6 +91,15 @@ const defaultConfig = {
 // 从环境变量获取配置
 function getConfigFromEnv() {
   const config = JSON.parse(JSON.stringify(defaultConfig)); // 深拷贝默认配置
+  // 获取 KV 命名空间 ID
+  const kv_namespaces = [];
+  const namespaceId = process.env.KV_NAMESPACE_ID;
+  if (namespaceId) {
+    kv_namespaces.push({
+      binding: "CONF-INJECT-SCRIPT",
+      id: namespaceId.trim()
+    });
+  }
   return config;
 }
 

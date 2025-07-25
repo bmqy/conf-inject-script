@@ -117,7 +117,6 @@ function generateToml(config) {
     toml += `ADMIN_USERNAME = "${config.ADMIN_USERNAME}"\n`;
     toml += `ADMIN_PASSWORD = "${config.ADMIN_PASSWORD}"\n\n`;
   }
-  toml += `keep_vars = ${config.keep_vars}\n`;
   toml += `[[kv_namespaces]]\n`;
   config.kv_namespaces.forEach(namespace => {
     toml += `  binding = "${namespace.binding}"\n`;

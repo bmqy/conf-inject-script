@@ -76,9 +76,10 @@ function loadEnvFile() {
 const defaultConfig = {
   name: "conf-inject-script",
   main: "src/worker.js",
-  compatibility_date: "2023-09-04",
+  compatibility_date: "2025-04-03",
   keep_vars: true,
   assets: {
+    not_found_handling : "single-page-application",
     directory: "./dist"
   },
   triggers: {
@@ -100,6 +101,7 @@ function generateToml(config) {
   toml += `keep_vars = ${config.keep_vars}\n`;
   toml += `[assets]\n`;
   toml += `directory = "${config.assets.directory}"\n`;
+  toml += `not_found_handling = "${config.assets.not_found_handling}"\n`;
 
   // 添加触发器配置
   toml += `[triggers]\n`;

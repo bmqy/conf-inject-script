@@ -100,6 +100,7 @@ function getConfigFromEnv() {
       id: namespaceId.trim()
     });
   }
+  config.kv_namespaces = kv_namespaces;
   return config;
 }
 

@@ -102,7 +102,7 @@ function generateToml(config) {
   toml += `main = "${config.main}"\n`;
   toml += `compatibility_date = "${config.compatibility_date}"\n\n`;
   toml += `keep_vars = ${config.keep_vars}\n`;
-  toml += `[kv_namespaces]\n`;
+  toml += `[[kv_namespaces]]\n`;
   config.kv_namespaces.forEach(namespace => {
     toml += `  binding = "${namespace.binding}"\n`;
     toml += `  id = "${namespace.id}"\n`;

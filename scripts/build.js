@@ -77,6 +77,7 @@ const defaultConfig = {
   name: "conf-inject-script",
   main: "src/worker.js",
   compatibility_date: "2023-09-04",
+  directory: "./dist",
   keep_vars: true,
   triggers: {
     crons: []
@@ -86,51 +87,6 @@ const defaultConfig = {
 // 从环境变量获取配置
 function getConfigFromEnv() {
   const config = JSON.parse(JSON.stringify(defaultConfig)); // 深拷贝默认配置
-  
-  // INJECT_SOURCE_CONFIG_LIST
-  if (process.env.INJECT_SOURCE_CONFIG_LIST) {
-    try {
-      if (typeof process.env.INJECT_SOURCE_CONFIG_LIST === 'string') {
-        config.vars.INJECT_SOURCE_CONFIG_LIST = process.env.INJECT_SOURCE_CONFIG_LIST;
-      } else if (Array.isArray(process.env.INJECT_SOURCE_CONFIG_LIST)) {
-        config.vars.INJECT_SOURCE_CONFIG_LIST = process.env.INJECT_SOURCE_CONFIG_LIST;
-      }
-    } catch (error) {
-      console.warn('警告: 解析INJECT_SOURCE_CONFIG_LIST环境变量失败，使用原始字符串');
-      config.vars.INJECT_SOURCE_CONFIG_LIST = process.env.INJECT_SOURCE_CONFIG_LIST;
-    }
-  }
-  // INJECT_PLATFORM_LIST
-  if (process.env.INJECT_PLATFORM_LIST) {
-    try {
-      if (typeof process.env.INJECT_PLATFORM_LIST === 'string') {
-        config.vars.INJECT_PLATFORM_LIST = process.env.INJECT_PLATFORM_LIST;
-      } else if (typeof process.env.INJECT_PLATFORM_LIST === 'object') {
-        config.vars.INJECT_PLATFORM_LIST = process.env.INJECT_PLATFORM_LIST;
-      }
-    } catch (error) {
-      console.warn('警告: 解析INJECT_PLATFORM_LIST环境变量失败，使用原始字符串');
-      config.vars.INJECT_PLATFORM_LIST = process.env.INJECT_PLATFORM_LIST;
-    }
-  }
-  // 新增：ACCESS_TOKEN
-  if (process.env.ACCESS_TOKEN) {
-    config.vars.ACCESS_TOKEN = process.env.ACCESS_TOKEN;
-  }
-  // TELEGRAM_BOT_TOKEN
-  if (process.env.TELEGRAM_BOT_TOKEN) {
-    config.vars.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  }
-  // TELEGRAM_CHAT_ID
-  if (process.env.TELEGRAM_CHAT_ID) {
-    config.vars.TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-  }
-  
-  // 如果环境变量中有WORKER_NAME，则使用环境变量中的值
-  if (process.env.WORKER_NAME) {
-    config.name = process.env.WORKER_NAME;
-  }
-
   return config;
 }
 
@@ -139,8 +95,9 @@ function generateToml(config) {
   let toml = `name = "${config.name}"\n`;
   toml += `main = "${config.main}"\n`;
   toml += `compatibility_date = "${config.compatibility_date}"\n\n`;
-  toml += `keep_vars = true\n`;
-  
+  toml += `directory = "${config.directory}"\n`;
+  toml += `keep_vars = "${config.keep_vars}"\n`;
+
   // 添加触发器配置
   toml += `[triggers]\n`;
   toml += `crons = []\n\n`;

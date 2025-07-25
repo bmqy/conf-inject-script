@@ -104,7 +104,8 @@ function generateToml(config) {
   toml += `keep_vars = ${config.keep_vars}\n`;
   toml += `[kv_namespaces]\n`;
   config.kv_namespaces.forEach(namespace => {
-    toml += `  ${namespace.binding} = { id = "${namespace.id}" }\n`;
+    toml += `  binding = "${namespace.binding}"\n`;
+    toml += `  id = "${namespace.id}"\n`;
   });
   toml += `[assets]\n`;
   toml += `directory = "${config.assets.directory}"\n`;

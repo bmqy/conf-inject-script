@@ -77,8 +77,10 @@ const defaultConfig = {
   name: "conf-inject-script",
   main: "src/worker.js",
   compatibility_date: "2023-09-04",
-  directory: "./dist",
   keep_vars: true,
+  assets: {
+    directory: "./dist"
+  },
   triggers: {
     crons: []
   }
@@ -95,8 +97,9 @@ function generateToml(config) {
   let toml = `name = "${config.name}"\n`;
   toml += `main = "${config.main}"\n`;
   toml += `compatibility_date = "${config.compatibility_date}"\n\n`;
-  toml += `directory = "${config.directory}"\n`;
-  toml += `keep_vars = "${config.keep_vars}"\n`;
+  toml += `keep_vars = ${config.keep_vars}\n`;
+  toml += `[assets]\n`;
+  toml += `directory = "${config.assets.directory}"\n`;
 
   // 添加触发器配置
   toml += `[triggers]\n`;

@@ -9,12 +9,6 @@
             </div>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
               <router-link 
-                to="/" 
-                class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-              >
-                首页
-              </router-link>
-              <router-link 
                 v-if="isLoggedIn"
                 to="/admin" 
                 class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
@@ -31,13 +25,6 @@
             >
               登出
             </button>
-            <button 
-              v-else
-              @click="goToLogin"
-              class="ml-4 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            >
-              登录
-            </button>
           </div>
         </div>
       </div>
@@ -48,6 +35,9 @@
         <router-view />
       </div>
     </main>
+    
+    <!-- 添加通知组件 -->
+    <notifications />
   </div>
 </template>
 
@@ -86,10 +76,6 @@ export default {
       // 跳转到首页
       this.$router.push('/');
     },
-    goToLogin() {
-      // 跳转到登录页面
-      this.$router.push('/login');
-    }
   }
 }
 </script>

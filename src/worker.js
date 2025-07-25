@@ -27,10 +27,82 @@ export default {
       return handleAPIRequest(request, env, ctx);
     }
     
+    // 处理带token的配置请求 /:platform/:author/:token
+    if (pathname.split('/').filter(part => part !== '').length === 3) {
+      return handleTokenConfigRequest(request, env, ctx);
+    }
+    
     // 处理静态文件
     return handleStaticFiles(request, env, ctx);
   }
 };
+
+/**
+ * 处理带token的配置请求
+ * @param {Request} request 请求对象
+ * @param {object} env 环境变量
+ * @param {object} ctx 上下文
+ * @returns {Response} 响应对象
+ */
+async function handleTokenConfigRequest(request, env, ctx) {
+  try {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    
+    // 解析路径 /:platform/:author/:token
+    const pathParts = pathname.split('/').filter(part => part !== '');
+    if (pathParts.length !== 3) {
+      return new Response('路径格式错误', { status: 400 });
+    }
+    
+    const platform = pathParts[0];
+    const author = pathParts[1];
+    const token = pathParts[2];
+    
+    // 验证token
+    const storedToken = await env["CONF-INJECT-SCRIPT"].get('api-token');
+    if (!storedToken || storedToken !== token) {
+      return new Response('无效的访问令牌', { status: 401 });
+    }
+    
+    // 获取作者配置
+    const configId = `${platform}-${author}`;
+    const configStr = await env["CONF-INJECT-SCRIPT"].get(`config-${configId}`);
+    
+    if (configStr === null) {
+      return new Response('配置未找到', { status: 404 });
+    }
+    
+    const config = JSON.parse(configStr);
+    
+    // 获取原始配置文件
+    const originalResponse = await fetch(config.url);
+    if (!originalResponse.ok) {
+      return new Response('获取原始配置文件失败', { status: 500 });
+    }
+    
+    const originalConfig = await originalResponse.text();
+    
+    // 获取平台注入内容
+    const injectConfigText = await env["CONF-INJECT-SCRIPT"].get(`platform-${platform}`);
+    if (injectConfigText === null) {
+      return new Response('平台注入内容未找到', { status: 404 });
+    }
+    
+    // 合并配置
+    const mergedConfig = injectConfigToOriginal(originalConfig, injectConfigText, platform);
+    
+    return new Response(mergedConfig, {
+      headers: {
+        'Content-Type': 'text/plain;charset=UTF-8',
+        'Cache-Control': 'no-cache'
+      }
+    });
+  } catch (error) {
+    console.error('处理配置合并时出错:', error);
+    return new Response('处理配置合并时出错: ' + error.message, { status: 500 });
+  }
+}
 
 /**
  * 处理API请求
@@ -55,6 +127,15 @@ async function handleAPIRequest(request, env, ctx) {
       status: 401,
       headers: { 'Content-Type': 'application/json' }
     });
+  }
+  
+  // API Token管理接口
+  if (pathname === '/api/token') {
+    if (request.method === 'GET') {
+      return handleGetToken(request, env, ctx);
+    } else if (request.method === 'POST') {
+      return handleSaveToken(request, env, ctx);
+    }
   }
   
   // 管理平台注入内容
@@ -219,6 +300,64 @@ async function checkAuth(request, env) {
   // 简单示例：检查Bearer令牌
   const token = authHeader.replace('Bearer ', '');
   return token === 'fake-jwt-token';
+}
+
+/**
+ * 处理获取API Token
+ * @param {Request} request 请求对象
+ * @param {object} env 环境变量
+ * @param {object} ctx 上下文
+ * @returns {Response} 响应对象
+ */
+async function handleGetToken(request, env, ctx) {
+  try {
+    const token = await env["CONF-INJECT-SCRIPT"].get('api-token') || '';
+    
+    return new Response(JSON.stringify({ token }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('获取API Token出错:', error);
+    return new Response(JSON.stringify({ error: '获取API Token失败: ' + error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+/**
+ * 处理保存API Token
+ * @param {Request} request 请求对象
+ * @param {object} env 环境变量
+ * @param {object} ctx 上下文
+ * @returns {Response} 响应对象
+ */
+async function handleSaveToken(request, env, ctx) {
+  try {
+    const { token } = await request.json();
+    
+    if (typeof token !== 'string') {
+      return new Response(JSON.stringify({ error: 'Token必须是字符串' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    await env["CONF-INJECT-SCRIPT"].put('api-token', token);
+    
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: 'Token保存成功' 
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('保存API Token出错:', error);
+    return new Response(JSON.stringify({ error: '保存API Token失败: ' + error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 }
 
 /**
@@ -576,7 +715,7 @@ async function handleDeleteConfig(request, env, ctx, configId) {
 }
 
 /**
- * 处理获取合并后的配置
+ * 处理获取合并后的配置（旧接口，保留兼容性）
  * @param {Request} request 请求对象
  * @param {object} env 环境变量
  * @param {object} ctx 上下文

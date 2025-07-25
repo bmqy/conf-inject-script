@@ -6,9 +6,12 @@ import Login from './views/Login.vue'
 import Admin from './views/Admin.vue'
 import './style.css'
 
+// 引入通知插件
+import Notifications from '@kyvg/vue3-notification'
+
 // 定义路由
 const routes = [
-  { path: '/', component: Home },
+  { path: '/', redirect: '/login' }, // 根路径重定向到登录页
   { path: '/login', component: Login },
   { path: '/admin', component: Admin, meta: { requiresAuth: true } }
 ]
@@ -41,4 +44,5 @@ router.beforeEach((to, from, next) => {
 // 创建Vue应用并使用路由
 const app = createApp(App)
 app.use(router)
+app.use(Notifications)
 app.mount('#app')

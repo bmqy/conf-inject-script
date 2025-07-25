@@ -12,8 +12,7 @@ const path = require('path');
 
 // 加载.env文件
 function loadEnvFile() {
-  const envPath = path.join(__dirname, '.env');
-  
+  const envPath = path.join(__dirname, '../', '.env');
   if (fs.existsSync(envPath)) {
     console.log('发现.env文件，正在加载环境变量...');
     const envContent = fs.readFileSync(envPath, 'utf8');
@@ -91,6 +90,9 @@ const defaultConfig = {
 // 从环境变量获取配置
 function getConfigFromEnv() {
   const config = JSON.parse(JSON.stringify(defaultConfig)); // 深拷贝默认配置
+  // 获取管理员用户名和密码
+  config['ADMIN_USERNAME'] = process.env.ADMIN_USERNAME;
+  config['ADMIN_PASSWORD'] = process.env.ADMIN_PASSWORD;
   // 获取 KV 命名空间 ID
   const kv_namespaces = [];
   const namespaceId = process.env.KV_NAMESPACE_ID;
@@ -109,6 +111,10 @@ function generateToml(config) {
   let toml = `name = "${config.name}"\n`;
   toml += `main = "${config.main}"\n`;
   toml += `compatibility_date = "${config.compatibility_date}"\n\n`;
+  toml += `keep_vars = ${config.keep_vars}\n`;
+  toml += `[vars]\n`;
+  toml += `ADMIN_USERNAME = "${config.ADMIN_USERNAME}"\n`;
+  toml += `ADMIN_PASSWORD = "${config.ADMIN_PASSWORD}"\n\n`;
   toml += `keep_vars = ${config.keep_vars}\n`;
   toml += `[[kv_namespaces]]\n`;
   config.kv_namespaces.forEach(namespace => {

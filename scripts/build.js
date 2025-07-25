@@ -82,8 +82,8 @@ const defaultConfig = {
     not_found_handling : "single-page-application",
     directory: "./dist"
   },
-  bindings: [
-    { name: "CONF-INJECT-SCRIPT", type: "kv_namespace" }
+  kv_namespaces: [
+    { binding: "CONF-INJECT-SCRIPT", id: "kv_id" }
   ],
   triggers: {
     crons: []
@@ -102,9 +102,9 @@ function generateToml(config) {
   toml += `main = "${config.main}"\n`;
   toml += `compatibility_date = "${config.compatibility_date}"\n\n`;
   toml += `keep_vars = ${config.keep_vars}\n`;
-  toml += `[bindings]\n`;
-  config.bindings.forEach(binding => {
-    toml += `  ${binding.name} = { type = "${binding.type}" }\n`;
+  toml += `[kv_namespaces]\n`;
+  config.kv_namespaces.forEach(namespace => {
+    toml += `  ${namespace.binding} = { id = "${namespace.id}" }\n`;
   });
   toml += `[assets]\n`;
   toml += `directory = "${config.assets.directory}"\n`;

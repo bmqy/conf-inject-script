@@ -112,9 +112,11 @@ function generateToml(config) {
   toml += `main = "${config.main}"\n`;
   toml += `compatibility_date = "${config.compatibility_date}"\n\n`;
   toml += `keep_vars = ${config.keep_vars}\n`;
-  toml += `[vars]\n`;
-  toml += `ADMIN_USERNAME = "${config.ADMIN_USERNAME}"\n`;
-  toml += `ADMIN_PASSWORD = "${config.ADMIN_PASSWORD}"\n\n`;
+  if(process.env.node_env === 'development'){
+    toml += `[vars]\n`;
+    toml += `ADMIN_USERNAME = "${config.ADMIN_USERNAME}"\n`;
+    toml += `ADMIN_PASSWORD = "${config.ADMIN_PASSWORD}"\n\n`;
+  }
   toml += `keep_vars = ${config.keep_vars}\n`;
   toml += `[[kv_namespaces]]\n`;
   config.kv_namespaces.forEach(namespace => {

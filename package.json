@@ -5,9 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "test": "node test/test.js",
-    "build": "node utils/build.js",
-    "deploy": "npm run build && npx wrangler deploy",
-    "dev": "npm run build && npx wrangler dev"
+    "deploy": "npx wrangler deploy",
+    "dev": "npx wrangler dev"
   },
   "keywords": [
     "cloudflare",

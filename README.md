@@ -35,19 +35,27 @@
 1. 克隆本仓库
 2. 复制 `env.example` 为 `.env` 并按需修改
 3. 运行 `npm install` 安装依赖
-4. 运行 `node build.js` 自动生成 wrangler.toml（自动写入所有环境变量）
+4. 根据需要修改 `wrangler.toml` 中的环境变量配置
 5. 运行 `npx wrangler deploy` 部署到 Cloudflare Workers
+
+> 注意：如果需要使用 Telegram 通知功能或使用私有 Gist，需要在 Cloudflare Workers 控制台中添加相应的环境变量（如 `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`GITHUB_TOKEN` 等）。
 
 ## 环境变量设置指南
 
-必须设置以下`运行时`环境变量：
+必须设置以下环境变量：
 
 - `INJECT_SOURCE_CONFIG_LIST`：配置列表（JSON数组，详见下方示例）
 - `INJECT_PLATFORM_LIST`：各平台注入 Gist 地址（JSON对象，key为平台名，value为gist原始链接）
 - `ACCESS_TOKEN`：访问密钥，建议使用 secret 类型，所有请求都需携带
+
+可选环境变量：
+
 - `TELEGRAM_BOT_TOKEN`：用于通知的 Telegram Bot Token（可选，启用通知时必填）
 - `TELEGRAM_CHAT_ID`：用于通知的 Telegram Chat ID（可选，启用通知时必填）
-- `GITHUB_TOKEN`：GitHub访问令牌，用于获取最新的Gist内容
+- `GITHUB_TOKEN`：GitHub访问令牌，用于获取最新的Gist内容（可选）
+  - 如果你的Gist是私有的，或者希望确保能获取到最新的Gist版本，建议配置此参数
+
+> **建议：** `ACCESS_TOKEN`、`TELEGRAM_BOT_TOKEN`、`GITHUB_TOKEN` 请在 Cloudflare 控制台以 secret 方式设置，避免泄露。
 
 ### INJECT_SOURCE_CONFIG_LIST 示例
 
@@ -94,8 +102,6 @@ TELEGRAM_CHAT_ID=123456789
 GITHUB_TOKEN=github_personal_access_token
 ```
 
-> **建议：** `ACCESS_TOKEN`、`TELEGRAM_BOT_TOKEN`、`GITHUB_TOKEN` 请在 Cloudflare 控制台以 secret 方式设置，避免泄露。
-
 ## 注入配置内容说明
 
 - 注入内容需托管在 Gist（或其它可公开访问的原始文本地址），并在 `INJECT_PLATFORM_LIST` 中配置。
@@ -108,9 +114,6 @@ GITHUB_TOKEN=github_personal_access_token
 - 需在 `.env` 或 Cloudflare 环境变量中设置 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID`。
 - 如不设置这两个变量，则不会发送通知。
 
-## 构建与自动化
-
-- 运行 `node build.js` 会自动读取 `.env`，生成 wrangler.toml 并写入所有环境变量，无需手动维护 toml 文件。
 
 ## 其它说明
 

@@ -318,15 +318,37 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
             const idx = line.indexOf('=');
             if (idx > 0) keyMap[line.slice(0, idx).trim()] = line;
           });
+          // 保留原始配置中的所有key，除非被注入配置覆盖
           origBody.forEach(line => {
             const idx = line.indexOf('=');
-            if (idx > 0 && !(line.slice(0, idx).trim() in keyMap)) keyMap[line.slice(0, idx).trim()] = line;
+            if (idx > 0) {
+              const key = line.slice(0, idx).trim();
+              // 只有当注入配置中没有这个key时，才保留原始key
+              // 如果注入配置中有同名key，则会被下面的injectBody处理
+              if (!(key in keyMap)) keyMap[key] = line;
+            }
           });
           // 合并，保留注释和空行，注入key优先
-          const merged = [
-            ...injectBody.filter(line => line.trim() === '' || line.trim().startsWith('#') || line.indexOf('=') > 0),
-            ...origBody.filter(line => line.trim() === '' || line.trim().startsWith('#') || (line.indexOf('=') > 0 && !(line.slice(0, line.indexOf('=')).trim() in keyMap)))
-          ];
+          // 首先处理注入内容中的所有行（包括注释和已存在的key-value）
+          const merged = [...injectBody];
+          
+          // 然后添加原始内容中独有的key-value行
+          origBody.forEach(line => {
+            const idx = line.indexOf('=');
+            if (idx > 0) {
+              const key = line.slice(0, idx).trim();
+              // 如果这个key在注入配置中已经存在，则不重复添加
+              if (!(key in keyMap) || keyMap[key] !== line) return;
+              // 检查这个key-value是否已经存在于merged中
+              if (!merged.includes(line)) {
+                merged.push(line);
+              }
+            } else if ((line.trim() === '' || line.trim().startsWith('#')) && !merged.includes(line)) {
+              // 添加原始内容中的注释和空行（如果尚未存在）
+              merged.push(line);
+            }
+          });
+          
           if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
             result.push(title + '\n' + merged.join('\n'));
           }

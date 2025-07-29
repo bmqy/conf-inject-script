@@ -15,6 +15,93 @@ function injectConfigToOriginal(originalConfig, injectConfigText, platform) {
   return mergeConfBySectionRegex(originalConfig, injectConfigText, platform);
 }
 
+/**
+ * 从GitHub Gist URL获取最新版本的原始URL
+ * @param {string} gistUrl 原始Gist URL
+ * @param {string} platform 平台名称
+ * @param {string} githubToken GitHub访问令牌（可选）
+ * @returns {string} 最新版本的原始文件URL
+ */
+async function getLatestGistRawUrl(gistUrl, platform, githubToken = null) {
+  // 解析Gist URL获取gist ID
+  // 支持格式如: 
+  // https://gist.githubusercontent.com/username/gist_id/raw/...
+  // https://gist.github.com/username/gist_id
+  const gistIdMatch = gistUrl.match(/\/([a-f0-9]+)(?:\/raw|$|\/)/);
+  if (!gistIdMatch) {
+    // 如果不是标准格式，直接返回原始URL
+    return gistUrl;
+  }
+  
+  const gistId = gistIdMatch[1];
+  const apiUrl = `https://api.github.com/gists/${gistId}`;
+  
+  // 构建请求头
+  const headers = {
+    'User-Agent': 'Conf-Inject-Script/1.0 (Cloudflare Workers)',
+    'Accept': 'application/vnd.github.v3+json'
+  };
+  
+  // 如果提供了GitHub令牌，则添加认证头
+  if (githubToken) {
+    headers['Authorization'] = `token ${githubToken}`;
+  }
+  
+  try {
+    // 获取Gist的最新信息
+    const response = await fetch(apiUrl, {
+      headers: headers
+    });
+    
+    if (!response.ok) {
+      console.warn(`获取Gist信息失败: ${response.status} ${response.statusText}`);
+      // 获取失败时返回原始URL
+      return gistUrl;
+    }
+    
+    const gistData = await response.json();
+    
+    // 获取文件列表
+    const files = gistData.files;
+    if (!files) {
+      console.warn('Gist响应中没有找到文件信息');
+      return gistUrl;
+    }
+    
+    // 根据平台名称查找对应的文件
+    const platformFileName = `${platform}.conf`;
+    if (files[platformFileName]) {
+      const rawUrl = files[platformFileName].raw_url;
+      if (rawUrl) {
+        console.log(`找到平台 ${platform} 对应的文件: ${platformFileName}`);
+        return rawUrl;
+      }
+    }
+    
+    // 如果找不到对应平台的文件，则使用第一个文件（向后兼容）
+    const fileName = Object.keys(files)[0];
+    if (!fileName) {
+      console.warn('Gist中没有找到文件');
+      return gistUrl;
+    }
+    
+    const file = files[fileName];
+    const rawUrl = file.raw_url;
+    
+    if (!rawUrl) {
+      console.warn('Gist文件中没有找到raw_url');
+      return gistUrl;
+    }
+    
+    console.log(`使用默认文件: ${fileName}`);
+    return rawUrl;
+  } catch (error) {
+    console.warn(`获取最新Gist URL时出错: ${error.message}`);
+    // 出错时返回原始URL
+    return gistUrl;
+  }
+}
+
 // 导出默认处理函数
 export default {
   async fetch(request, env, ctx) {
@@ -94,7 +181,7 @@ export default {
     } catch (e) {
       return new Response('解析INJECT_PLATFORM_LIST环境变量失败: ' + e.message, { status: 500 });
     }
-    const gistUrl = platformGistMap[platform];
+    let gistUrl = platformGistMap[platform];
     if (!gistUrl) {
       return new Response(`<!DOCTYPE html>
 <html lang="zh-CN">
@@ -121,6 +208,10 @@ export default {
         headers: { "Content-Type": "text/html; charset=utf-8" }
       });
     }
+    
+    // 新增：自动获取最新gist版本的原始URL
+    gistUrl = await getLatestGistRawUrl(gistUrl, platform, env.GITHUB_TOKEN);
+    console.log(`使用gist URL: ${gistUrl}`);
     
     // 从环境变量获取配置列表
     let configList;
@@ -219,4 +310,4 @@ export default {
       }
     });
   }
-}; 
+};

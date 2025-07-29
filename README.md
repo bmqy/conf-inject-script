@@ -40,13 +40,14 @@
 
 ## 环境变量设置指南
 
-必须设置以下`构建时`环境变量：
+必须设置以下`运行时`环境变量：
 
 - `INJECT_SOURCE_CONFIG_LIST`：配置列表（JSON数组，详见下方示例）
 - `INJECT_PLATFORM_LIST`：各平台注入 Gist 地址（JSON对象，key为平台名，value为gist原始链接）
 - `ACCESS_TOKEN`：访问密钥，建议使用 secret 类型，所有请求都需携带
 - `TELEGRAM_BOT_TOKEN`：用于通知的 Telegram Bot Token（可选，启用通知时必填）
 - `TELEGRAM_CHAT_ID`：用于通知的 Telegram Chat ID（可选，启用通知时必填）
+- `GITHUB_TOKEN`：GitHub访问令牌，用于获取最新的Gist内容
 
 ### INJECT_SOURCE_CONFIG_LIST 示例
 
@@ -87,13 +88,18 @@ TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 TELEGRAM_CHAT_ID=123456789
 ```
 
-> **建议：** `ACCESS_TOKEN`、`TELEGRAM_BOT_TOKEN` 请在 Cloudflare 控制台以 secret 方式设置，避免泄露。
+### GITHUB_TOKEN 示例
+
+```
+GITHUB_TOKEN=github_personal_access_token
+```
+
+> **建议：** `ACCESS_TOKEN`、`TELEGRAM_BOT_TOKEN`、`GITHUB_TOKEN` 请在 Cloudflare 控制台以 secret 方式设置，避免泄露。
 
 ## 注入配置内容说明
 
 - 注入内容需托管在 Gist（或其它可公开访问的原始文本地址），并在 `INJECT_PLATFORM_LIST` 中配置。
 - Worker 会自动拉取对应平台的 Gist 内容，按分区合并注入到原始配置文件。
-- `[general]`、`[mitm]` 分区 key 唯一，注入内容优先，其它分区内容追加，所有注释、顺序、空行均保留。
 
 ## Telegram Bot 通知功能
 
@@ -110,4 +116,4 @@ TELEGRAM_CHAT_ID=123456789
 
 - 支持的分区、注释、顺序、空行等均严格保留，适配 QuantumultX/Loon 配置文件格式。
 - 如需自定义更多平台或分区，请修改 `platform-conf-parser.js` 中的 `PLATFORM_SECTIONS`。
-- 如遇问题请先查看 Cloudflare Worker 日志，或反馈 issue。 
+- 如遇问题请先查看 Cloudflare Worker 日志，或反馈 issue。

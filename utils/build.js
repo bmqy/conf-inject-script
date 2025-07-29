@@ -12,7 +12,7 @@ const path = require('path');
 
 // 加载.env文件
 function loadEnvFile() {
-  const envPath = path.join(__dirname, '.env');
+  const envPath = path.join(__dirname, '../', '.env');
   
   if (fs.existsSync(envPath)) {
     console.log('发现.env文件，正在加载环境变量...');
@@ -80,9 +80,7 @@ const defaultConfig = {
   vars: {
     INJECT_SOURCE_CONFIG_LIST: "[]",
     INJECT_PLATFORM_LIST: "{}",
-    ACCESS_TOKEN: "",
-    TELEGRAM_BOT_TOKEN: "",
-    TELEGRAM_CHAT_ID: ""
+    ACCESS_TOKEN: ""
   },
   triggers: {
     crons: []
@@ -123,14 +121,6 @@ function getConfigFromEnv() {
   if (process.env.ACCESS_TOKEN) {
     config.vars.ACCESS_TOKEN = process.env.ACCESS_TOKEN;
   }
-  // TELEGRAM_BOT_TOKEN
-  if (process.env.TELEGRAM_BOT_TOKEN) {
-    config.vars.TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  }
-  // TELEGRAM_CHAT_ID
-  if (process.env.TELEGRAM_CHAT_ID) {
-    config.vars.TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
-  }
   
   // 如果环境变量中有WORKER_NAME，则使用环境变量中的值
   if (process.env.WORKER_NAME) {
@@ -142,9 +132,12 @@ function getConfigFromEnv() {
 
 // 生成TOML格式的配置
 function generateToml(config) {
-  let toml = `name = "${config.name}"\n`;
+  let toml = `name = "${config.name.trim()}"\n`;
   toml += `main = "${config.main}"\n`;
   toml += `compatibility_date = "${config.compatibility_date}"\n\n`;
+  
+  // 添加keep_vars以保留现有的环境变量
+  toml += `keep_vars = true\n\n`;
   
   // 添加触发器配置
   toml += `[triggers]\n`;
@@ -184,18 +177,11 @@ function generateToml(config) {
     platformList = `'''{}'''`;
   }
   toml += `INJECT_PLATFORM_LIST = ${platformList}\n`;
-  // 新增：ACCESS_TOKEN
+  
+  // ACCESS_TOKEN
   let accessToken = config.vars.ACCESS_TOKEN;
   if (typeof accessToken !== 'string') accessToken = String(accessToken || '');
   toml += `ACCESS_TOKEN = '''${accessToken}'''\n`;
-  // TELEGRAM_BOT_TOKEN
-  let tgToken = config.vars.TELEGRAM_BOT_TOKEN;
-  if (typeof tgToken !== 'string') tgToken = String(tgToken || '');
-  toml += `TELEGRAM_BOT_TOKEN = '''${tgToken}'''\n`;
-  // TELEGRAM_CHAT_ID
-  let tgChatId = config.vars.TELEGRAM_CHAT_ID;
-  if (typeof tgChatId !== 'string') tgChatId = String(tgChatId || '');
-  toml += `TELEGRAM_CHAT_ID = '''${tgChatId}'''\n`;
   
   return toml;
 }
@@ -239,16 +225,9 @@ function main() {
     } catch (error) {
       console.log('平台Gist映射: 无法解析');
     }
-    // 新增：ACCESS_TOKEN摘要
+    // ACCESS_TOKEN摘要
     if (config.vars.ACCESS_TOKEN) {
       console.log(`访问Token: ${config.vars.ACCESS_TOKEN.length > 0 ? '[已设置]' : '[未设置]'}`);
-    }
-    // TELEGRAM_BOT_TOKEN/CHAT_ID摘要
-    if (config.vars.TELEGRAM_BOT_TOKEN) {
-      console.log(`Telegram Bot Token: [已设置]`);
-    }
-    if (config.vars.TELEGRAM_CHAT_ID) {
-      console.log(`Telegram Chat ID: ${config.vars.TELEGRAM_CHAT_ID}`);
     }
   } catch (error) {
     console.error('生成 wrangler.toml 文件时出错:', error);
@@ -257,4 +236,4 @@ function main() {
 }
 
 // 执行主函数
-main(); 
+main();

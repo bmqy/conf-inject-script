@@ -44,7 +44,7 @@ async function getLatestGistRawUrl(gistUrl, platform, githubToken = null) {
   
   // 如果提供了GitHub令牌，则添加认证头
   if (githubToken) {
-    headers['Authorization'] = `token ${githubToken}`;
+    headers['Authorization'] = `bean ${githubToken}`;
   }
   
   try {

@@ -311,6 +311,12 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
         if (!injectBlock || injectBody.length === 0 || injectBody.every(l => l.trim() === '')) {
           if (origBody.length > 0 && origBody.some(l => l.trim() !== '')) {
             result.push(title + '\n' + origBody.join('\n'));
+          } else if (origBody.length > 0) {
+            // 保留原始内容，即使全部是空行
+            result.push(title + '\n' + origBody.join('\n'));
+          } else if (origBlock) {
+            // 保留原始空分区
+            result.push(title);
           }
         } else {
           const keyMap = {};
@@ -351,6 +357,9 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
           
           if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
             result.push(title + '\n' + merged.join('\n'));
+          } else if (origBlock) {
+            // 保留原始空分区
+            result.push(title);
           }
         }
       } else if (platform === 'loon' && name === 'plugin') {
@@ -387,6 +396,9 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
         ];
         if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
           result.push(title + '\n' + merged.join('\n'));
+        } else if (origBlock) {
+          // 保留原始空分区
+          result.push(title);
         }
       }
     }

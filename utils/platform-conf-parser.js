@@ -263,22 +263,44 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
     const sectionRe = /^\s*\[[^\]]+\]\s*$/gm;
     let match, lastIdx = 0, blocks = [], lastName = null, lastTitle = null;
     while ((match = sectionRe.exec(text)) !== null) {
-      if (match.index > lastIdx) {
+      if (lastName !== null) {
+        // 保存上一个分区
         blocks.push({
           name: lastName,
           title: lastTitle,
           body: text.slice(lastIdx, match.index)
         });
       }
+      // 更新当前分区信息
       lastTitle = match[0].replace(/\r?\n$/, ''); // 保留原始分区标题
       lastName = match[0].replace(/\[|\]/g, '').trim().toLowerCase();
       lastIdx = match.index + match[0].length;
     }
-    if (lastIdx < text.length) {
+    // 处理最后一个分区
+    if (lastName !== null) {
       blocks.push({
         name: lastName,
         title: lastTitle,
         body: text.slice(lastIdx)
+      });
+    }
+    // 处理文件头部（在第一个分区之前的内容）
+    if (blocks.length > 0 && text.slice(0, blocks[0].title?.length) !== blocks[0].title) {
+      const firstBlock = blocks[0];
+      const headContent = text.slice(0, text.indexOf(firstBlock.title));
+      if (headContent.trim()) {
+        blocks.unshift({
+          name: null,
+          title: null,
+          body: headContent
+        });
+      }
+    } else if (blocks.length === 0) {
+      // 整个文件没有分区
+      blocks.push({
+        name: null,
+        title: null,
+        body: text
       });
     }
     return blocks;
@@ -292,13 +314,28 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
   injectBlocks.forEach(b => { if (b.name) injectMap[b.name] = b; });
   // 3. 文件头部注释
   const head = origBlocks.find(b => !b.name) || { body: '' };
-  // 4. 合并分区
+  // 4. 合并分区，按照原始文件的顺序
   let result = [head.body];
   const seen = new Set(); // Track seen sections to avoid duplicate titles
-  for (let i = 0; i < platformSections.length; i++) {
-    const name = platformSections[i];
+  
+  // 按照原始文件中的顺序处理分区
+  for (const origBlock of origBlocks) {
+    if (!origBlock.name) continue; // 跳过文件头部
+    const name = origBlock.name;
     if (seen.has(name)) continue; // Skip if already processed
     seen.add(name);
+    processSection(name);
+  }
+  
+  // 处理注入文件中有但原始文件中没有的新分区
+  for (const injectBlock of injectBlocks) {
+    const name = injectBlock.name;
+    if (!name || seen.has(name)) continue;
+    seen.add(name);
+    processSection(name);
+  }
+  
+  function processSection(name) {
     const origBlock = origMap[name];
     const injectBlock = injectMap[name];
     if (origBlock || injectBlock) {
@@ -387,6 +424,9 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
         ];
         if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
           result.push(title + '\n' + merged.join('\n'));
+        } else if (origBlock) {
+          // 保留原始空分区
+          result.push(title);
         }
       } else {
         // 其它分区：注入内容在前，原内容在后
@@ -400,16 +440,6 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
           // 保留原始空分区
           result.push(title);
         }
-      }
-    }
-  }
-  // 5. 处理注入中有但平台分区和原始分区都没有的新分区
-  for (const name in injectMap) {
-    if ((!platformSections.includes(name) && !origMap[name]) && !seen.has(name)) {
-      seen.add(name);
-      const injectBody = injectMap[name].body.replace(/^\n+|\n+$/g, '').split('\n');
-      if (injectBody.length > 0 && injectBody.some(l => l.trim() !== '')) {
-        result.push((injectMap[name].title || `[${name}]`) + '\n' + injectBody.join('\n'));
       }
     }
   }

@@ -95,7 +95,7 @@ async function sendTelegramMessage(env, text) {
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text })
+      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' })
     });
 
     if (!response.ok) {
@@ -113,12 +113,16 @@ function notifyTelegram(ctx, env, text) {
   }
 }
 
-function maskToken(token) {
-  const tokenText = String(token ?? '');
-  if (!tokenText) return '';
-  if (tokenText.length <= 4) return '*'.repeat(tokenText.length);
-  if (tokenText.length <= 8) return `${tokenText.slice(0, 2)}${'*'.repeat(tokenText.length - 4)}${tokenText.slice(-2)}`;
-  return `${tokenText.slice(0, 3)}${'*'.repeat(tokenText.length - 6)}${tokenText.slice(-3)}`;
+function escapeTelegramHtml(value) {
+  return String(value ?? '').replace(/[&<>]/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;'
+  }[char]));
+}
+
+function formatTelegramSpoiler(value) {
+  return `<tg-spoiler>${escapeTelegramHtml(value)}</tg-spoiler>`;
 }
 
 function formatAccessNotification({ platform, sourceUrl, token }) {
@@ -127,10 +131,26 @@ function formatAccessNotification({ platform, sourceUrl, token }) {
     '',
     '有新的请求',
     '',
-    `平台: ${formatPlatformName(platform)}`,
-    `源文件: ${sourceUrl}`,
-    `Token: ${maskToken(token)}`
+    `平台: ${escapeTelegramHtml(formatPlatformName(platform))}`,
+    `源文件: ${escapeTelegramHtml(sourceUrl)}`,
+    `Token: ${formatTelegramSpoiler(token)}`
   ].join('\n');
+}
+
+function formatAdminNotification(subject, action, target) {
+  return [
+    '#通知服务 #配置注入脚本',
+    '',
+    `${escapeTelegramHtml(subject)}已${escapeTelegramHtml(action)}：${escapeTelegramHtml(target)}`
+  ].join('\n');
+}
+
+function formatPlatformTarget(platform) {
+  return formatPlatformName(platform);
+}
+
+function formatSourceTarget(platform, author) {
+  return `${formatPlatformName(platform)} / ${author}`;
 }
 
 async function getPlatformList(env) {
@@ -805,6 +825,7 @@ async function handleAdminApi(request, env, ctx) {
     if (path === 'platforms') {
       if (request.method === 'GET') {
         const platforms = await getPlatformList(env);
+        notifyTelegram(ctx, env, formatAdminNotification('平台配置', '查询', '全部'));
         return jsonResponse(platforms || []);
       }
       if (request.method === 'POST') {
@@ -824,7 +845,7 @@ async function handleAdminApi(request, env, ctx) {
           updated_at: now
         });
         await savePlatformList(env, platforms);
-        notifyTelegram(ctx, env, `平台配置已新增: ${formatPlatformName(platform)}`);
+        notifyTelegram(ctx, env, formatAdminNotification('平台配置', '新增', formatPlatformTarget(platform)));
         return jsonResponse({ success: true });
       }
     }
@@ -848,7 +869,7 @@ async function handleAdminApi(request, env, ctx) {
           updated_at: new Date().toISOString()
         };
         await savePlatformList(env, platforms);
-        notifyTelegram(ctx, env, `平台配置已更新: ${formatPlatformName(platform)}`);
+        notifyTelegram(ctx, env, formatAdminNotification('平台配置', '更新', formatPlatformTarget(platform)));
         return jsonResponse({ success: true });
       }
       if (request.method === 'DELETE') {
@@ -856,7 +877,7 @@ async function handleAdminApi(request, env, ctx) {
         const deletedPlatform = platforms.find(item => Number(item.id) === id);
         await savePlatformList(env, platforms.filter(item => Number(item.id) !== id));
         if (deletedPlatform) {
-          notifyTelegram(ctx, env, `平台配置已删除: ${formatPlatformName(deletedPlatform.platform)}`);
+          notifyTelegram(ctx, env, formatAdminNotification('平台配置', '删除', formatPlatformTarget(deletedPlatform.platform)));
         }
         return jsonResponse({ success: true });
       }
@@ -866,6 +887,7 @@ async function handleAdminApi(request, env, ctx) {
     if (path === 'sources') {
       if (request.method === 'GET') {
         const sources = await getSourceList(env);
+        notifyTelegram(ctx, env, formatAdminNotification('配置源', '查询', '全部'));
         return jsonResponse(sources || []);
       }
       if (request.method === 'POST') {
@@ -890,7 +912,7 @@ async function handleAdminApi(request, env, ctx) {
           updated_at: now
         });
         await saveSourceList(env, sources);
-        notifyTelegram(ctx, env, `配置源已新增: ${formatPlatformName(platform)} / ${author}`);
+        notifyTelegram(ctx, env, formatAdminNotification('配置源', '新增', formatSourceTarget(platform, author)));
         return jsonResponse({ success: true });
       }
     }
@@ -907,6 +929,8 @@ async function handleAdminApi(request, env, ctx) {
         const platform = normalizePlatformStoredValue(source.platform);
         const author = String(source.author ?? '').trim().toLowerCase();
         if (!platform || !author) return new Response('配置源数据不完整', { status: 400 });
+
+        notifyTelegram(ctx, env, formatAdminNotification('配置源', '查询', formatSourceTarget(platform, author)));
 
         const accessUrl = new URL(request.url);
         accessUrl.pathname = `/${encodeURIComponent(platform)}/${encodeURIComponent(author)}/${encodeURIComponent(env.ACCESS_TOKEN)}`;
@@ -935,7 +959,7 @@ async function handleAdminApi(request, env, ctx) {
           updated_at: new Date().toISOString()
         };
         await saveSourceList(env, sources);
-        notifyTelegram(ctx, env, `配置源已更新: ${formatPlatformName(platform)} / ${author}`);
+        notifyTelegram(ctx, env, formatAdminNotification('配置源', '更新', formatSourceTarget(platform, author)));
         return jsonResponse({ success: true });
       }
       if (request.method === 'DELETE') {
@@ -943,7 +967,7 @@ async function handleAdminApi(request, env, ctx) {
         const deletedSource = sources.find(item => Number(item.id) === id);
         await saveSourceList(env, sources.filter(item => Number(item.id) !== id));
         if (deletedSource) {
-          notifyTelegram(ctx, env, `配置源已删除: ${formatPlatformName(deletedSource.platform)} / ${deletedSource.author}`);
+          notifyTelegram(ctx, env, formatAdminNotification('配置源', '删除', formatSourceTarget(deletedSource.platform, deletedSource.author)));
         }
         return jsonResponse({ success: true });
       }

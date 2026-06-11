@@ -6,11 +6,11 @@
   "scripts": {
     "test": "node test/test.js",
     "generate:wrangler": "node scripts/generate-wrangler.js",
-    "deploy": "npm run generate:wrangler && npx wrangler deploy --config wrangler.generated.toml",
-    "dev": "npm run generate:wrangler && npx wrangler dev --config wrangler.generated.toml",
+    "deploy": "npm run generate:wrangler && npx wrangler deploy --config wrangler.toml",
+    "dev": "npm run generate:wrangler && npx wrangler dev --config wrangler.toml",
     "kv:create": "npx wrangler kv namespace create CONFIG_KV",
     "kv:list": "npx wrangler kv namespace list",
-    "logs": "npm run generate:wrangler && npx wrangler tail --config wrangler.generated.toml"
+    "logs": "npm run generate:wrangler && npx wrangler tail --config wrangler.toml"
   },
   "keywords": [
     "cloudflare",

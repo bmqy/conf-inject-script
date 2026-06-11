@@ -87,13 +87,6 @@ function renderWranglerToml(env) {
 
   toml += `\nkeep_vars = ${keepVars ? 'true' : 'false'}\n`;
 
-  toml += '\n# 本地开发环境变量（用于开发测试）\n';
-  toml += '[vars]\n';
-  toml += `ACCESS_TOKEN = ${tomlString(getEnv(env, 'ACCESS_TOKEN', 'your_secret_token'))}\n`;
-  toml += `ADMIN_TOKEN = ${tomlString(getEnv(env, 'ADMIN_TOKEN', 'your_admin_token'))}\n`;
-  toml += `TELEGRAM_BOT_TOKEN = ${tomlString(getEnv(env, 'TELEGRAM_BOT_TOKEN', ''))}\n`;
-  toml += `TELEGRAM_CHAT_ID = ${tomlString(getEnv(env, 'TELEGRAM_CHAT_ID', ''))}\n`;
-
   toml += '\n[triggers]\n';
   toml += 'crons = []\n';
 
@@ -129,7 +122,7 @@ function renderWranglerToml(env) {
 
 function main() {
   const env = loadEnv();
-  const outputFile = getEnv(env, 'WRANGLER_OUTPUT_FILE', 'wrangler.generated.toml');
+  const outputFile = getEnv(env, 'WRANGLER_OUTPUT_FILE', 'wrangler.toml');
   const outputPath = path.resolve(rootDir, outputFile);
   const { toml, kvNamespaceId } = renderWranglerToml(env);
 

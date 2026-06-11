@@ -9,6 +9,7 @@ yarn-error.log
 dist/
 worker/
 wrangler.toml
+wrangler.generated.toml
 
 # 测试生成的文件
 modified-config.conf

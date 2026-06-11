@@ -13,7 +13,7 @@
 - 平台注入内容直接存储在 Cloudflare KV 中
 - 配置文件订阅访问和管理后台分别使用独立 `Token`，安全性高，支持 `secret` 环境变量
 - 错误页面美观友好，自动提示
-- 构建脚本自动生成 `wrangler.toml`，环境变量一键写入
+- 构建脚本自动生成 `wrangler.generated.toml`，环境变量一键写入
 - **Web 管理后台**：在线管理平台配置内容和配置源，无需修改代码
 - **Cloudflare KV 存储**：所有配置内容统一存储在 KV 中，便于在线管理
 
@@ -78,24 +78,24 @@ npx wrangler kv namespace create CONFIG_KV
 
 - `ACCESS_TOKEN`：订阅访问密钥（必填，建议使用 secret 类型，仅用于 `/:platform/:author/:token`）
 - `ADMIN_TOKEN`：管理后台密钥（必填，建议使用 secret 类型，仅用于 `/admin` 和 `/admin/api/*`）
-- `KV_NAMESPACE_ID`：KV 命名空间 ID（必填，用于动态生成 `wrangler.toml`）
+- `KV_NAMESPACE_ID`：KV 命名空间 ID（必填，用于动态生成 `wrangler.generated.toml`）
 - `TELEGRAM_BOT_TOKEN`：Telegram Bot Token（可选，设置后用于发送配置变更通知）
 - `TELEGRAM_CHAT_ID`：Telegram Chat ID（可选，设置后用于发送配置变更通知）
 
 > 配置源和平台注入内容统一通过管理后台写入 KV，环境变量中需要设置 `ACCESS_TOKEN` 和 `ADMIN_TOKEN`。
 
-生成 `wrangler.toml`：
+生成 `wrangler.generated.toml`：
 
 ```bash
 npm run generate:wrangler
 ```
 
-`npm run dev` 和 `npm run deploy` 会自动先执行 `generate:wrangler`。
+`npm run dev` 和 `npm run deploy` 会自动先执行 `generate:wrangler`，并显式使用生成的 `wrangler.generated.toml`。
 
 ### 4. 部署到 Cloudflare Workers
 
 ```bash
-npx wrangler deploy
+npm run deploy
 ```
 
 ### 5. 使用管理后台（推荐）
@@ -132,7 +132,13 @@ TELEGRAM_CHAT_ID=
 
 如果 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID` 均已设置，管理后台新增、更新或删除平台配置/配置源后会发送 Telegram 通知；任一项为空时不会发送通知。
 
-### wrangler.toml 动态生成
+### Wrangler 配置说明
+
+仓库中提交了一个不含密钥和 KV ID 的 `wrangler.jsonc`，用于 Cloudflare 线上环境直接执行 `npx wrangler deploy` 时识别 Worker 入口文件。
+
+本地开发和正式命令行部署请使用 `npm run dev` 或 `npm run deploy`，脚本会根据 `.env` 或当前进程环境变量生成包含 KV 绑定的 `wrangler.generated.toml`。
+
+### wrangler.generated.toml 动态生成
 
 生成脚本位于 `scripts/generate-wrangler.js`，会读取 `.env` 和当前进程环境变量，环境变量优先级高于 `.env`。
 
@@ -143,8 +149,6 @@ TELEGRAM_CHAT_ID=
 - `TELEGRAM_BOT_TOKEN`：Telegram Bot Token，生成到 `[vars]`，为空则不发送通知
 - `TELEGRAM_CHAT_ID`：Telegram Chat ID，生成到 `[vars]`，为空则不发送通知
 - `KV_NAMESPACE_ID`：KV 命名空间 ID
-
-以下动态生成项已有默认值，通常不需要写入 `.env`：`WRANGLER_NAME`、`WRANGLER_MAIN`、`WRANGLER_COMPATIBILITY_DATE`、`WRANGLER_COMPATIBILITY_FLAGS`、`WRANGLER_KEEP_VARS`、`WRANGLER_OUTPUT_FILE`、`OBSERVABILITY_ENABLED`、`KV_BINDING`。
 
 兼容保留的可选项：
 

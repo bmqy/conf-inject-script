@@ -129,19 +129,19 @@ function renderWranglerToml(env) {
 
 function main() {
   const env = loadEnv();
-  const outputFile = getEnv(env, 'WRANGLER_OUTPUT_FILE', 'wrangler.toml');
+  const outputFile = getEnv(env, 'WRANGLER_OUTPUT_FILE', 'wrangler.generated.toml');
   const outputPath = path.resolve(rootDir, outputFile);
   const { toml, kvNamespaceId } = renderWranglerToml(env);
 
   try {
     writeFileSync(outputPath, toml, 'utf8');
-    console.log(`wrangler.toml generated at ${path.relative(rootDir, outputPath)}`);
+    console.log(`Wrangler config generated at ${path.relative(rootDir, outputPath)}`);
 
     if (kvNamespaceId === 'YOUR_KV_NAMESPACE_ID') {
       console.warn('Warning: KV_NAMESPACE_ID is not set. Replace YOUR_KV_NAMESPACE_ID before deploying.');
     }
   } catch (error) {
-    console.error('Failed to generate wrangler.toml:', error.message);
+    console.error(`Failed to generate ${outputFile}:`, error.message);
     process.exit(1);
   }
 }

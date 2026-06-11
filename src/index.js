@@ -113,6 +113,26 @@ function notifyTelegram(ctx, env, text) {
   }
 }
 
+function maskToken(token) {
+  const tokenText = String(token ?? '');
+  if (!tokenText) return '';
+  if (tokenText.length <= 4) return '*'.repeat(tokenText.length);
+  if (tokenText.length <= 8) return `${tokenText.slice(0, 2)}${'*'.repeat(tokenText.length - 4)}${tokenText.slice(-2)}`;
+  return `${tokenText.slice(0, 3)}${'*'.repeat(tokenText.length - 6)}${tokenText.slice(-3)}`;
+}
+
+function formatAccessNotification({ platform, sourceUrl, token }) {
+  return [
+    '#通知服务 #配置注入脚本',
+    '',
+    '有新的请求',
+    '',
+    `平台: ${formatPlatformName(platform)}`,
+    `源文件: ${sourceUrl}`,
+    `Token: ${maskToken(token)}`
+  ].join('\n');
+}
+
 async function getPlatformList(env) {
   const items = await readKVList(env, KV_KEY_PLATFORMS);
   return items?.sort((a, b) => String(a.platform).localeCompare(String(b.platform))) || null;
@@ -1082,6 +1102,11 @@ export default {
     }
     // 获取原始配置文件内容
     const originalConfigUrl = matchedConfig.url;
+    notifyTelegram(ctx, env, formatAccessNotification({
+      platform,
+      sourceUrl: originalConfigUrl,
+      token
+    }));
     const originalResponse = await fetch(originalConfigUrl);
     if (!originalResponse.ok) {
       return new Response(

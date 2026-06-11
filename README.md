@@ -79,8 +79,8 @@ npx wrangler kv namespace create CONFIG_KV
 - `ACCESS_TOKEN`：订阅访问密钥（必填，建议使用 secret 类型，仅用于 `/:platform/:author/:token`）
 - `ADMIN_TOKEN`：管理后台密钥（必填，建议使用 secret 类型，仅用于 `/admin` 和 `/admin/api/*`）
 - `KV_NAMESPACE_ID`：KV 命名空间 ID（必填，用于动态生成 `wrangler.toml`）
-- `TELEGRAM_BOT_TOKEN`：Telegram Bot Token（可选，设置后用于发送配置变更通知）
-- `TELEGRAM_CHAT_ID`：Telegram Chat ID（可选，设置后用于发送配置变更通知）
+- `TELEGRAM_BOT_TOKEN`：Telegram Bot Token（可选，设置后用于发送配置变更和订阅访问通知）
+- `TELEGRAM_CHAT_ID`：Telegram Chat ID（可选，设置后用于发送配置变更和订阅访问通知）
 
 > 配置源和平台注入内容统一通过管理后台写入 KV，环境变量中需要设置 `ACCESS_TOKEN` 和 `ADMIN_TOKEN`。
 
@@ -130,7 +130,7 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 ```
 
-如果 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID` 均已设置，管理后台新增、更新或删除平台配置/配置源后会发送 Telegram 通知；任一项为空时不会发送通知。
+如果 `TELEGRAM_BOT_TOKEN` 和 `TELEGRAM_CHAT_ID` 均已设置，管理后台新增、更新或删除平台配置/配置源，以及用户成功请求订阅配置文件时会发送 Telegram 通知；任一项为空时不会发送通知。
 
 ### Wrangler 配置说明
 

@@ -6,7 +6,6 @@
   "scripts": {
     "test": "node test/test.js",
     "generate:wrangler": "node scripts/generate-wrangler.js",
-    "config:generate": "npm run generate:wrangler",
     "deploy": "npm run generate:wrangler && npx wrangler deploy --config wrangler.generated.toml",
     "dev": "npm run generate:wrangler && npx wrangler dev --config wrangler.generated.toml",
     "kv:create": "npx wrangler kv namespace create CONFIG_KV",

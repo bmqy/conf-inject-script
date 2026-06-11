@@ -15,8 +15,15 @@ const PLATFORM_SECTIONS = {
   ]
 };
 
+function normalizePlatformKey(platform) {
+  const normalized = String(platform || '').trim().toLowerCase();
+  if (normalized === 'quantumultx' || normalized === 'quanx') return 'quanx';
+  if (normalized === 'loon') return 'loon';
+  return 'quanx';
+}
+
 function getPlatformSections(platform) {
-  return PLATFORM_SECTIONS[platform] || PLATFORM_SECTIONS['quanx'];
+  return PLATFORM_SECTIONS[normalizePlatformKey(platform)];
 }
 
 // parsePlatformConf
@@ -257,7 +264,8 @@ function mergeSectionsAppendWithGeneralUnique(origSections, injectSections) {
 }
 
 function mergeConfBySectionRegex(origText, injectText, platform) {
-  const platformSections = PLATFORM_SECTIONS[platform] || PLATFORM_SECTIONS['quanx'];
+  platform = normalizePlatformKey(platform);
+  const platformSections = PLATFORM_SECTIONS[platform];
   // 1. 用正则切分为分区块（严格只匹配独占一行的分区标题，保留title）
   function splitSections(text) {
     const sectionRe = /^\s*\[[^\]]+\]\s*$/gm;

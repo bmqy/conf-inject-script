@@ -8,6 +8,7 @@ yarn-error.log
 .wrangler/
 dist/
 worker/
+wrangler.toml
 
 # 测试生成的文件
 modified-config.conf
@@ -17,6 +18,7 @@ modified-config.conf
 
 # 编辑器配置
 .vscode/
+.github/agents/
 .idea/
 *.swp
 *.swo

@@ -1,8 +1,0 @@
-name = "conf-inject-script"
-main = "src/index.js"
-compatibility_date = "2023-09-04"
-
-keep_vars = true
-
-[triggers]
-crons = []

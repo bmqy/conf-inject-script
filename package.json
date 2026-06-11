@@ -5,8 +5,13 @@
   "main": "src/index.js",
   "scripts": {
     "test": "node test/test.js",
-    "deploy": "npx wrangler deploy",
-    "dev": "npx wrangler dev"
+    "generate:wrangler": "node scripts/generate-wrangler.js",
+    "config:generate": "npm run generate:wrangler",
+    "deploy": "npm run generate:wrangler && npx wrangler deploy",
+    "dev": "npm run generate:wrangler && npx wrangler dev",
+    "kv:create": "npx wrangler kv namespace create CONFIG_KV",
+    "kv:list": "npx wrangler kv namespace list",
+    "logs": "npx wrangler tail"
   },
   "keywords": [
     "cloudflare",

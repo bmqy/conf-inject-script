@@ -825,7 +825,6 @@ async function handleAdminApi(request, env, ctx) {
     if (path === 'platforms') {
       if (request.method === 'GET') {
         const platforms = await getPlatformList(env);
-        notifyTelegram(ctx, env, formatAdminNotification('平台配置', '查询', '全部'));
         return jsonResponse(platforms || []);
       }
       if (request.method === 'POST') {
@@ -887,7 +886,6 @@ async function handleAdminApi(request, env, ctx) {
     if (path === 'sources') {
       if (request.method === 'GET') {
         const sources = await getSourceList(env);
-        notifyTelegram(ctx, env, formatAdminNotification('配置源', '查询', '全部'));
         return jsonResponse(sources || []);
       }
       if (request.method === 'POST') {

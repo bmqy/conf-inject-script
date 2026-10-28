@@ -217,7 +217,7 @@ function handleAdminPage(request, env) {
 <html lang="zh-CN" class="light">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>配置注入脚本 - 管理后台</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -271,14 +271,81 @@ function handleAdminPage(request, env) {
   <style>
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+
+    html { -webkit-text-size-adjust: 100%; }
+    body { overflow-x: hidden; }
+    .admin-table td { word-break: break-word; }
+
+    /* 移动端适配：表格转卡片布局 */
+    @media (max-width: 767px) {
+      .admin-table thead { display: none; }
+      .admin-table,
+      .admin-table tbody,
+      .admin-table tr,
+      .admin-table td {
+        display: block;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+      }
+      .admin-table tbody > tr {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+        overflow: hidden;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .admin-table td {
+        padding: 0.625rem 0.875rem !important;
+        white-space: normal !important;
+      }
+      .admin-table td + td { border-top: 1px dashed #e2e8f0; }
+      .admin-table td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.25rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #94a3b8;
+      }
+      .admin-table pre { max-height: 7.5rem; }
+      .admin-table tbody > tr.admin-empty {
+        border: 0 !important;
+        box-shadow: none;
+        margin-bottom: 0;
+      }
+      .admin-table tbody > tr.admin-empty > td { padding: 2rem 1rem !important; }
+      .admin-actions {
+        display: flex !important;
+        flex-wrap: wrap;
+        gap: 0.5rem !important;
+      }
+      .admin-actions > button {
+        flex: 1 1 6rem;
+        justify-content: center;
+        width: auto;
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+      }
+      .admin-tabs { padding-left: 0.25rem !important; padding-right: 0.25rem !important; }
+
+      /* 防止 iOS 聚焦表单元素时自动放大页面 */
+      #loginForm input,
+      #modalForm input,
+      #modalForm select,
+      #modalForm textarea { font-size: 16px; }
+      #modalForm textarea { line-height: 1.5; }
+    }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
   <!-- 登录表单 -->
   <div id="loginForm" class="flex items-center justify-center min-h-screen">
     <div class="w-full max-w-md">
-      <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-8">
-        <h1 class="text-2xl font-semibold text-center text-slate-900 mb-6">管理后台登录</h1>
+      <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-6 sm:p-8 mx-4 sm:mx-auto">
+        <h1 class="text-xl sm:text-2xl font-semibold text-center text-slate-900 mb-6">管理后台登录</h1>
         <div id="loginError" class="hidden mb-4 p-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md"></div>
         <form onsubmit="login(event)" class="space-y-4">
           <div class="space-y-2">
@@ -299,9 +366,9 @@ function handleAdminPage(request, env) {
     <!-- Header -->
     <div class="bg-white border-b border-slate-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-          <h1 class="text-xl font-semibold text-slate-900">配置注入脚本 - 管理后台</h1>
-          <button onclick="logout()" class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors duration-200">
+        <div class="flex justify-between items-center gap-3 h-auto min-h-16 py-3 sm:py-0">
+          <h1 class="text-base sm:text-xl font-semibold text-slate-900 leading-snug">配置注入脚本 - 管理后台</h1>
+          <button onclick="logout()" class="shrink-0 inline-flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors duration-200">
             退出登录
           </button>
         </div>
@@ -309,26 +376,26 @@ function handleAdminPage(request, env) {
     </div>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
       <div id="message" class="hidden mb-4"></div>
       
       <!-- Tabs -->
       <div class="bg-white rounded-lg border border-slate-200 shadow-sm">
         <div class="border-b border-slate-200">
-          <nav class="flex space-x-8 px-6" aria-label="Tabs">
-            <button class="tab border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600" onclick="switchTab('platforms')">
+          <nav class="admin-tabs flex space-x-2 sm:space-x-8 px-2 sm:px-6 overflow-x-auto" aria-label="Tabs">
+            <button class="tab shrink-0 border-b-2 border-blue-500 py-3 sm:py-4 px-2 sm:px-1 text-sm font-medium text-blue-600" onclick="switchTab('platforms', this)">
               平台配置管理
             </button>
-            <button class="tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300" onclick="switchTab('sources')">
+            <button class="tab shrink-0 border-b-2 border-transparent py-3 sm:py-4 px-2 sm:px-1 text-sm font-medium text-slate-500 hover:text-slate-700 hover:border-slate-300" onclick="switchTab('sources', this)">
               配置源管理
             </button>
           </nav>
         </div>
 
         <!-- 平台管理 -->
-        <div id="platforms" class="tab-content active p-6">
+        <div id="platforms" class="tab-content active p-3 sm:p-6">
           <div class="mb-4">
-            <button id="addPlatformButton" onclick="openModal('platform')" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+            <button id="addPlatformButton" onclick="openModal('platform')" class="w-full sm:w-auto justify-center inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
               </svg>
@@ -336,7 +403,7 @@ function handleAdminPage(request, env) {
             </button>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full table-fixed divide-y divide-slate-200">
+            <table class="admin-table w-full table-fixed divide-y divide-slate-200">
               <thead class="bg-slate-50">
                 <tr>
                   <th class="w-32 px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">平台</th>
@@ -350,9 +417,9 @@ function handleAdminPage(request, env) {
         </div>
 
         <!-- 配置源管理 -->
-        <div id="sources" class="tab-content p-6">
+        <div id="sources" class="tab-content p-3 sm:p-6">
           <div class="mb-4">
-            <button onclick="openModal('source')" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+            <button onclick="openModal('source')" class="w-full sm:w-auto justify-center inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
               <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
               </svg>
@@ -360,7 +427,7 @@ function handleAdminPage(request, env) {
             </button>
           </div>
           <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200">
+            <table class="admin-table min-w-full divide-y divide-slate-200">
               <thead class="bg-slate-50">
                 <tr>
                   <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">平台</th>
@@ -378,21 +445,21 @@ function handleAdminPage(request, env) {
   </div>
 
   <!-- 模态框 -->
-  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between p-6 border-b border-slate-200">
+  <div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+    <div class="bg-white rounded-t-lg sm:rounded-lg shadow-xl max-w-3xl w-full mx-0 sm:mx-4 max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between gap-3 p-4 sm:p-6 border-b border-slate-200">
         <h2 id="modalTitle" class="text-lg font-semibold text-slate-900"></h2>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <button type="button" onclick="closeModal()" class="shrink-0 p-1 text-slate-400 hover:text-slate-600 transition-colors" aria-label="关闭">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
-      <form id="modalForm" onsubmit="submitForm(event)">
+      <form id="modalForm" onsubmit="submitForm(event)" class="flex flex-col overflow-hidden">
         <input type="hidden" id="formType">
         <input type="hidden" id="formId">
-        <div id="formFields" class="p-6 space-y-4"></div>
-        <div class="flex gap-3 px-6 pb-6">
+        <div id="formFields" class="p-4 sm:p-6 space-y-4 overflow-y-auto min-h-0"></div>
+        <div class="flex gap-3 p-4 sm:px-6 sm:pb-6 border-t border-slate-200">
           <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200">
             保存
           </button>
@@ -506,18 +573,21 @@ function handleAdminPage(request, env) {
     }
 
     // 切换标签
-    function switchTab(tab) {
+    function switchTab(tab, target) {
       const tabs = document.querySelectorAll('.tab');
       const contents = document.querySelectorAll('.tab-content');
-      
+      const activeTab = target || (typeof event !== 'undefined' ? event.target : null);
+
       tabs.forEach(t => {
         t.classList.remove('border-blue-500', 'text-blue-600');
         t.classList.add('border-transparent', 'text-slate-500');
       });
       contents.forEach(c => c.classList.remove('active'));
-      
-      event.target.classList.remove('border-transparent', 'text-slate-500');
-      event.target.classList.add('border-blue-500', 'text-blue-600');
+
+      if (activeTab) {
+        activeTab.classList.remove('border-transparent', 'text-slate-500');
+        activeTab.classList.add('border-blue-500', 'text-blue-600');
+      }
       document.getElementById(tab).classList.add('active');
     }
 
@@ -535,14 +605,19 @@ function handleAdminPage(request, env) {
       const data = await res.json();
       platformsData = data;
       const tbody = document.getElementById('platformsTable');
+      if (!data.length) {
+        tbody.innerHTML = \`<tr class="admin-empty"><td colspan="3" class="px-6 py-10 text-center text-sm text-slate-500">暂无平台配置，点击上方按钮新增</td></tr>\`;
+        updateAddPlatformButton();
+        return;
+      }
       tbody.innerHTML = data.map(p => \`
         <tr class="hover:bg-slate-50">
-          <td class="w-32 px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">\${escapeHtml(formatPlatformName(p.platform))}</td>
-          <td class="min-w-0 px-6 py-4 text-sm text-slate-500">
+          <td data-label="平台" class="w-32 px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">\${escapeHtml(formatPlatformName(p.platform))}</td>
+          <td data-label="配置内容" class="min-w-0 px-6 py-4 text-sm text-slate-500">
             <pre class="block w-full max-w-full max-h-32 overflow-hidden whitespace-pre-wrap break-all font-mono text-xs leading-relaxed">\${escapeHtml(p.content || '')}</pre>
           </td>
-          <td class="w-40 px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <div class="flex gap-2">
+          <td data-label="操作" class="w-40 px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <div class="admin-actions flex gap-2">
               <button onclick="editPlatformById(\${p.id})" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 transition-colors">
                 编辑
               </button>
@@ -564,13 +639,17 @@ function handleAdminPage(request, env) {
       const data = await res.json();
       sourcesData = data;
       const tbody = document.getElementById('sourcesTable');
+      if (!data.length) {
+        tbody.innerHTML = \`<tr class="admin-empty"><td colspan="4" class="px-6 py-10 text-center text-sm text-slate-500">暂无配置源，点击上方按钮新增</td></tr>\`;
+        return;
+      }
       tbody.innerHTML = data.map(s => \`
         <tr class="hover:bg-slate-50">
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">\${escapeHtml(formatPlatformName(s.platform))}</td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">\${escapeHtml(s.author)}</td>
-          <td class="px-6 py-4 text-sm text-slate-500 break-all">\${escapeHtml(s.url)}</td>
-          <td class="w-64 px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <div class="flex gap-2">
+          <td data-label="平台" class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">\${escapeHtml(formatPlatformName(s.platform))}</td>
+          <td data-label="作者" class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">\${escapeHtml(s.author)}</td>
+          <td data-label="URL" class="px-6 py-4 text-sm text-slate-500 break-all">\${escapeHtml(s.url)}</td>
+          <td data-label="操作" class="w-64 px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <div class="admin-actions flex gap-2">
               <button onclick="copySourceAccessLink(\${s.id})" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100 transition-colors">
                 复制链接
               </button>

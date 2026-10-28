@@ -156,6 +156,20 @@ TELEGRAM_CHAT_ID=
 
 - 注入内容直接保存在 KV key `platform_injections` 对应记录的 `content` 字段中。
 - Worker 会读取请求平台对应的 KV 内容，按分区合并注入到原始配置文件。
+- 合并规则：文件头部注释与原始分区顺序保持；`[general]`、`[mitm]` 按 key 唯一，同名 key 以注入内容为准，原始独有 key 保留；其它分区注入条目排在前面，**与注入内容重复的原始条目会被丢弃（以注入内容为准）**，原始独有条目保留；仅注入内容中存在的新分区按注入文件顺序追加。
+
+### 各分区条目去重依据
+
+| 平台 | 分区 | 去重依据 |
+| --- | --- | --- |
+| QuantumultX | `policy` | 首个字段中 `=` 之后的部分（策略组名称） |
+| QuantumultX | `server_local` | `tag` 值，无 `tag` 时取首个字段 |
+| QuantumultX | `filter_remote` / `server_remote` / `rewrite_local` / `rewrite_remote` | 首个字段（资源名 / URL 匹配表达式） |
+| QuantumultX | `task_local` | 行内脚本 URL |
+| Loon | `proxy` / `proxy group` / `host` | `=` 前的键名 |
+| Loon | `remote proxy` / `remote filter` / `remote rule` / `rewrite` / `plugin` | 首个字段（资源名 / URL） |
+| Loon | `script` | 行内脚本 URL |
+| 其它 | 未列出的分区 | 整行（只去除完全相同的条目） |
 
 ## 管理后台使用指南
 

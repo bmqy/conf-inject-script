@@ -15,11 +15,122 @@ const PLATFORM_SECTIONS = {
   ]
 };
 
+// 各分区条目去重策略（同一条目以注入内容为准）：
+// key         - 取首个 = 前的键名，适用于 `Name = value` 形式（[host]/[proxy]/[proxy group]）
+// afterFirstEq- 取首个逗号字段中首个 = 之后的部分，适用于 `type=Name` 形式（[policy]）
+// tag         - 取 tag= 的值，找不到时退化为 first，适用于带 tag 的节点条目（[server_local]）
+// first       - 取首个逗号字段，含 = 时取 = 之前的部分，否则取首个空白分隔字段，
+//               适用于 URL、脚本规则等以首个字段唯一标识的条目
+// script      - 取行内的脚本 URL/路径，找不到时退化为整行（[task_local]/[script]）
+// line        - 整行作为条目标识，只去重完全相同的条目（规则列表等）
+// 未列出的分区默认使用 line
+const SECTION_IDENTITY_STRATEGIES = {
+  quanx: {
+    policy: 'afterFirstEq',
+    server_local: 'tag',
+    filter_remote: 'first',
+    server_remote: 'first',
+    rewrite_local: 'first',
+    rewrite_remote: 'first',
+    task_local: 'script'
+  },
+  loon: {
+    proxy: 'key',
+    'proxy group': 'key',
+    host: 'key',
+    'remote proxy': 'first',
+    'remote filter': 'first',
+    'remote rule': 'first',
+    rewrite: 'first',
+    plugin: 'first',
+    script: 'script'
+  }
+};
+
 function normalizePlatformKey(platform) {
   const normalized = String(platform || '').trim().toLowerCase();
   if (normalized === 'quantumultx' || normalized === 'quanx') return 'quanx';
   if (normalized === 'loon') return 'loon';
   return 'quanx';
+}
+
+function getSectionIdentityStrategy(platform, sectionName) {
+  const strategies = SECTION_IDENTITY_STRATEGIES[normalizePlatformKey(platform)];
+  return (strategies && strategies[sectionName]) || 'line';
+}
+
+function getFirstField(line) {
+  return line.split(',')[0].trim();
+}
+
+function getScriptIdentity(line) {
+  const match = line.match(/(?:https?:\/\/|\/)[^\s,]*\.(?:js|sgmodule|plugin|js\.map)/i);
+  return match ? match[0].trim() : null;
+}
+
+// first 字段中首个 = 之后的部分（如 shadowsocks=1.2.3.4:8388 → 1.2.3.4:8388），
+// 无 = 时取首个空白分隔字段（如 ^https://pattern url reject → ^https://pattern）
+function getFieldIdentity(firstField) {
+  const idx = firstField.indexOf('=');
+  const identifier = idx >= 0
+    ? firstField.slice(idx + 1).trim()
+    : firstField.split(/\s+/)[0].trim();
+  return identifier || null;
+}
+
+function getLineIdentity(line, strategy) {
+  const normalized = String(line || '').replace(/\r$/, '').trim();
+  if (!normalized || normalized.startsWith('#') || normalized.startsWith(';')) return null;
+
+  if (strategy === 'key') {
+    const idx = normalized.indexOf('=');
+    if (idx <= 0) return null;
+    return `key:${normalized.slice(0, idx).trim().toLowerCase()}`;
+  }
+  if (strategy === 'script') {
+    const script = getScriptIdentity(normalized);
+    return script ? `script:${script}` : `line:${normalized}`;
+  }
+
+  const firstField = getFirstField(normalized);
+  if (!firstField) return null;
+
+  if (strategy === 'tag') {
+    const match = normalized.match(/(?:^|,|\s)tag\s*=\s*([^,\s]+)/i);
+    if (match) return `tag:${match[1].trim()}`;
+    const identifier = getFieldIdentity(firstField);
+    return identifier ? `field:${identifier}` : null;
+  }
+  if (strategy === 'afterFirstEq') {
+    const identifier = getFieldIdentity(firstField);
+    return identifier ? `field:${identifier}` : null;
+  }
+  if (strategy === 'first') {
+    const idx = firstField.indexOf('=');
+    const identifier = idx >= 0 ? firstField.slice(0, idx).trim() : firstField.split(/\s+/)[0].trim();
+    return identifier ? `field:${identifier}` : null;
+  }
+  return `line:${normalized}`;
+}
+
+// 注入内容在前；原始内容中与注入条目重复的条目丢弃，其余保留
+// 注释与空行不做标识匹配，仅在注入内容中已出现完全相同的行时才去重
+function mergeSectionEntries(origBody, injectBody, strategy) {
+  const injectIdentities = new Set();
+  const injectRawLines = new Set();
+  injectBody.forEach(line => {
+    injectRawLines.add(line);
+    const identity = getLineIdentity(line, strategy);
+    if (identity) injectIdentities.add(identity);
+  });
+  return [
+    ...injectBody,
+    ...origBody.filter(line => {
+      const identity = getLineIdentity(line, strategy);
+      if (identity) return !injectIdentities.has(identity);
+      return !injectRawLines.has(line);
+    })
+  ];
 }
 
 function getPlatformSections(platform) {
@@ -265,7 +376,6 @@ function mergeSectionsAppendWithGeneralUnique(origSections, injectSections) {
 
 function mergeConfBySectionRegex(origText, injectText, platform) {
   platform = normalizePlatformKey(platform);
-  const platformSections = PLATFORM_SECTIONS[platform];
   // 1. 用正则切分为分区块（严格只匹配独占一行的分区标题，保留title）
   function splitSections(text) {
     const sectionRe = /^\s*\[[^\]]+\]\s*$/gm;
@@ -352,96 +462,28 @@ function mergeConfBySectionRegex(origText, injectText, platform) {
       const injectBody = injectBlock ? injectBlock.body.replace(/^\n+|\n+$/g, '').split('\n') : [];
       const origBody = origBlock ? origBlock.body.replace(/^\n+|\n+$/g, '').split('\n') : [];
       if (name === 'general' || name === 'mitm') {
-        // 如果注入内容为空，直接保留原始内容
-        if (!injectBlock || injectBody.length === 0 || injectBody.every(l => l.trim() === '')) {
-          if (origBody.length > 0 && origBody.some(l => l.trim() !== '')) {
-            result.push(title + '\n' + origBody.join('\n'));
-          } else if (origBody.length > 0) {
-            // 保留原始内容，即使全部是空行
+        // 注入内容为空时直接保留原始内容
+        if (!injectBlock || injectBody.every(l => l.trim() === '')) {
+          if (origBody.length > 0) {
             result.push(title + '\n' + origBody.join('\n'));
           } else if (origBlock) {
             // 保留原始空分区
             result.push(title);
           }
         } else {
-          const keyMap = {};
-          injectBody.forEach(line => {
-            const idx = line.indexOf('=');
-            if (idx > 0) keyMap[line.slice(0, idx).trim()] = line;
-          });
-          // 保留原始配置中的所有key，除非被注入配置覆盖
-          origBody.forEach(line => {
-            const idx = line.indexOf('=');
-            if (idx > 0) {
-              const key = line.slice(0, idx).trim();
-              // 只有当注入配置中没有这个key时，才保留原始key
-              // 如果注入配置中有同名key，则会被下面的injectBody处理
-              if (!(key in keyMap)) keyMap[key] = line;
-            }
-          });
-          // 合并，保留注释和空行，注入key优先
-          // 首先处理注入内容中的所有行（包括注释和已存在的key-value）
-          const merged = [...injectBody];
-          
-          // 然后添加原始内容中独有的key-value行
-          origBody.forEach(line => {
-            const idx = line.indexOf('=');
-            if (idx > 0) {
-              const key = line.slice(0, idx).trim();
-              // 如果这个key在注入配置中已经存在，则不重复添加
-              if (!(key in keyMap) || keyMap[key] !== line) return;
-              // 检查这个key-value是否已经存在于merged中
-              if (!merged.includes(line)) {
-                merged.push(line);
-              }
-            } else if ((line.trim() === '' || line.trim().startsWith('#')) && !merged.includes(line)) {
-              // 添加原始内容中的注释和空行（如果尚未存在）
-              merged.push(line);
-            }
-          });
-          
-          if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
+          // 按键名去重：同名 key 以注入内容为准，原始独有 key 保留
+          const merged = mergeSectionEntries(origBody, injectBody, 'key');
+          if (merged.some(l => l.trim() !== '')) {
             result.push(title + '\n' + merged.join('\n'));
           } else if (origBlock) {
             // 保留原始空分区
             result.push(title);
           }
         }
-      } else if (platform === 'loon' && name === 'plugin') {
-        // loon [plugin] 分区特殊处理：网址唯一，注入优先
-        const getPluginUrl = (line) => {
-          const trimmedLine = line.trim();
-          if (!trimmedLine || trimmedLine.startsWith('#')) {
-            return null;
-          }
-          return trimmedLine.split(',')[0].trim();
-        };
-        const injectedUrlMap = {};
-        injectBody.forEach(line => {
-          const url = getPluginUrl(line);
-          if (url) {
-            injectedUrlMap[url] = true;
-          }
-        });
-        const merged = [
-          ...injectBody,
-          ...origBody.filter(line => {
-            const url = getPluginUrl(line);
-            return url ? !injectedUrlMap.hasOwnProperty(url) : true;
-          })
-        ];
-        if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
-          result.push(title + '\n' + merged.join('\n'));
-        } else if (origBlock) {
-          // 保留原始空分区
-          result.push(title);
-        }
       } else {
-        // 其它分区：注入内容在前，原内容在后
-        const merged = [
-          ...injectBody,
-          ...origBody
-        ];
+        // 其它分区：注入内容在前，重复条目以注入内容为准
+        const strategy = getSectionIdentityStrategy(platform, name);
+        const merged = mergeSectionEntries(origBody, injectBody, strategy);
         if (merged.length > 0 && merged.some(l => l.trim() !== '')) {
           result.push(title + '\n' + merged.join('\n'));
         } else if (origBlock) {
